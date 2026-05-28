@@ -4,8 +4,13 @@ require_once 'db.php';
 // Include the layout header
 require_once 'header.php'; 
 
+// Fetch Employers
 $empStmt = $pdo->query("SELECT employer_id, company_name FROM dbProj_employers ORDER BY company_name ASC");
 $employers = $empStmt->fetchAll();
+
+// Fetch Categories
+$catStmt = $pdo->query("SELECT category_id, category_name FROM dbProj_job_categories ORDER BY category_name ASC");
+$formCategories = $catStmt->fetchAll();
 ?>
 
 <div class="row">
@@ -47,7 +52,19 @@ $employers = $empStmt->fetchAll();
                                 <option value="popularity" <?= (isset($_GET['sort_by']) && $_GET['sort_by'] == 'popularity') ? 'selected' : '' ?>>Most Popular</option>
                             </select>
                         </div>
-
+                        
+                        <div class="col-md-3">
+                            <label class="form-label fw-bold">Category</label>
+                            <select name="search_category" class="form-select">
+                                <option value="">All Categories</option>
+                                <?php foreach ($formCategories as $c): ?>
+                                    <option value="<?= $c['category_id'] ?>" <?= (isset($_GET['search_category']) && $_GET['search_category'] == $c['category_id']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($c['category_name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        
                         <div class="col-md-2 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary w-100">Search</button>
                         </div>
@@ -91,6 +108,12 @@ $employers = $empStmt->fetchAll();
         $params[':employer'] = $_GET['search_employer'];
     }
 
+    // Category Search (Catches the button click from categories.php)
+    if (!empty($_GET['search_category'])) {
+        $conditions[] = "category_id = :category";
+        $params[':category'] = $_GET['search_category'];
+    }
+    
     // 4. Date Search (Posted After)
     if (!empty($_GET['search_date_from'])) {
         $conditions[] = "published_at >= :date_from";
