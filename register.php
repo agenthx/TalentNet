@@ -86,13 +86,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include 'header.php';
 ?>
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Create an Account</h4>
+<div class="row justify-content-center auth-shell g-4">
+    <div class="col-lg-5 d-none d-lg-block">
+        <aside class="auth-aside d-flex flex-column justify-content-between">
+            <div>
+                <span class="eyebrow"><i class="bi bi-person-plus"></i> Join the portal</span>
+                <h1 class="h2 fw-bold mb-3">Create an Account</h1>
+                <p class="mb-0">Choose a role and start using the job portal with your own credentials.</p>
             </div>
-            <div class="card-body p-4">
+            <div>
+                <div class="auth-feature">
+                    <i class="bi bi-people-fill"></i>
+                    <div>
+                        <strong>Job seeker</strong>
+                        <p class="small mb-0 text-white-50">Browse and interact with available opportunities.</p>
+                    </div>
+                </div>
+                <div class="auth-feature">
+                    <i class="bi bi-building-fill"></i>
+                    <div>
+                        <strong>Employer</strong>
+                        <p class="small mb-0 text-white-50">Prepare for creator workflows as your team expands them.</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+    <div class="col-md-9 col-lg-6">
+        <div class="card auth-card border-0">
+            <div class="card-header text-center py-4">
+                <h2 class="h4 mb-1">Create an Account</h2>
+                <p class="text-muted mb-0">Your details stay connected to the existing database flow.</p>
+            </div>
+            <div class="card-body p-4 p-lg-5">
                 
                 <?php if (!empty($errors)): ?>
                     <div class="alert alert-danger">
@@ -107,43 +133,59 @@ include 'header.php';
                 <form id="registrationForm" method="POST" action="register.php" novalidate>
                     <div class="mb-3">
                         <label for="full_name" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="full_name" name="full_name" 
+                        <div class="input-group has-validation">
+                            <span class="input-group-text"><i class="bi bi-person"></i></span>
+                            <input type="text" class="form-control" id="full_name" name="full_name"
                                value="<?php echo htmlspecialchars($full_name); ?>" required>
-                        <div class="invalid-feedback">Please enter your name</div>
+                            <div class="invalid-feedback">Please enter your name</div>
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" 
+                        <div class="input-group has-validation">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input type="email" class="form-control" id="email" name="email"
                                value="<?php echo htmlspecialchars($email); ?>" required>
-                        <div class="invalid-feedback">Please enter a valid email</div>
+                            <div class="invalid-feedback">Please enter a valid email</div>
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label d-block">I am a:</label>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="role_id" id="role_seeker" value="1" <?php echo $role_id == 1 ? 'checked' : ''; ?>>
-                            <label class="form-check-label" for="role_seeker">Job Seeker</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="role_id" id="role_employer" value="2" <?php echo $role_id == 2 ? 'checked' : ''; ?>>
-                            <label class="form-check-label" for="role_employer">Employer</label>
+                        <div class="role-choice">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="role_id" id="role_seeker" value="1" <?php echo $role_id == 1 ? 'checked' : ''; ?>>
+                                <label class="form-check-label fw-semibold" for="role_seeker">Job Seeker</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="role_id" id="role_employer" value="2" <?php echo $role_id == 2 ? 'checked' : ''; ?>>
+                                <label class="form-check-label fw-semibold" for="role_employer">Employer</label>
+                            </div>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required minlength="6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" required minlength="6">
+                        </div>
                         <div class="small text-muted">Must be at least 6 characters</div>
                     </div>
 
                     <div class="mb-3">
                         <label for="confirm_password" class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-check2-square"></i></span>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
                     </div>
 
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">Sign Up</button>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-person-plus me-1"></i>Sign Up
+                        </button>
                     </div>
                     
                     <div class="mt-3 text-center">

@@ -56,9 +56,15 @@ try {
 include 'header.php';
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Admin Reports</h1>
-    <a href="admin_dashboard.php" class="btn btn-sm btn-outline-secondary">Back to Dashboard</a>
+<div class="admin-topbar d-flex justify-content-between flex-wrap gap-3 align-items-center mb-4">
+    <div>
+        <span class="eyebrow text-primary"><i class="bi bi-bar-chart-line"></i> Reporting</span>
+        <h1 class="h2 fw-bold mb-1">Admin Reports</h1>
+        <p class="text-muted mb-0">Review popular listings and employer posting activity.</p>
+    </div>
+    <a href="admin_dashboard.php" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+    </a>
 </div>
 
 <?php if (isset($error_msg)): ?>
@@ -66,11 +72,11 @@ include 'header.php';
 <?php endif; ?>
 
 <!-- Report 1 -->
-<div class="card mb-4 shadow-sm">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">Most Popular Jobs</h5>
+<div class="card report-card mb-4 border-0">
+    <div class="card-header py-3">
+        <h2 class="h5 mb-0"><i class="bi bi-stars me-1 text-warning"></i>Most Popular Jobs</h2>
     </div>
-    <div class="card-body">
+    <div class="card-body p-4">
         <form method="GET" class="row g-3 mb-4">
             <div class="col-md-4">
                 <label for="start_date" class="form-label">Start Date</label>
@@ -81,10 +87,13 @@ include 'header.php';
                 <input type="date" class="form-control" id="end_date" name="end_date" value="<?php echo $end_date; ?>">
             </div>
             <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">Generate Report</button>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-arrow-repeat me-1"></i>Generate Report
+                </button>
             </div>
         </form>
 
+        <div class="table-shell">
         <div class="table-responsive">
             <table class="table table-sm table-hover">
                 <thead>
@@ -105,7 +114,7 @@ include 'header.php';
                             <td><strong><?php echo htmlspecialchars($job['title']); ?></strong></td>
                             <td><?php echo htmlspecialchars($job['company_name']); ?></td>
                             <td>
-                                <span class="text-warning">★</span> 
+                                <i class="bi bi-star-fill text-warning"></i>
                                 <?php echo number_format($job['avg_rating'], 1); ?>
                             </td>
                             <td><?php echo $job['rating_count']; ?></td>
@@ -116,15 +125,16 @@ include 'header.php';
                 </tbody>
             </table>
         </div>
+        </div>
     </div>
 </div>
 
 <!-- Report 2 -->
-<div class="card shadow-sm">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">Jobs by Employer</h5>
+<div class="card report-card border-0">
+    <div class="card-header py-3">
+        <h2 class="h5 mb-0"><i class="bi bi-building me-1 text-primary"></i>Jobs by Employer</h2>
     </div>
-    <div class="card-body">
+    <div class="card-body p-4">
         <form method="GET" class="row g-3 mb-4">
             <div class="col-md-8">
                 <label for="employer_id" class="form-label">Select Employer</label>
@@ -138,10 +148,13 @@ include 'header.php';
                 </select>
             </div>
             <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">Filter Jobs</button>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>Filter Jobs
+                </button>
             </div>
         </form>
 
+        <div class="table-shell">
         <div class="table-responsive">
             <table class="table table-sm table-hover">
                 <thead>
@@ -175,6 +188,7 @@ include 'header.php';
                     <?php endif; ?>
                 </tbody>
             </table>
+        </div>
         </div>
     </div>
 </div>

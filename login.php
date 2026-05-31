@@ -80,13 +80,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include 'header.php';
 ?>
 
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow">
-            <div class="card-header bg-dark text-white text-center">
-                <h4 class="mb-0">Welcome Back</h4>
+<div class="row justify-content-center auth-shell g-4">
+    <div class="col-lg-5 d-none d-lg-block">
+        <aside class="auth-aside d-flex flex-column justify-content-between">
+            <div>
+                <span class="eyebrow"><i class="bi bi-shield-lock"></i> Secure access</span>
+                <h1 class="h2 fw-bold mb-3">Welcome Back</h1>
+                <p class="mb-0">Sign in to continue to the job portal workspace.</p>
             </div>
-            <div class="card-body p-4">
+            <div>
+                <div class="auth-feature">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <div>
+                        <strong>Role-based access</strong>
+                        <p class="small mb-0 text-white-50">Admins, creators, and viewers each land in the right place.</p>
+                    </div>
+                </div>
+                <div class="auth-feature">
+                    <i class="bi bi-clock-history"></i>
+                    <div>
+                        <strong>Session expiry</strong>
+                        <p class="small mb-0 text-white-50">Inactive sessions are handled by the existing security helper.</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+    <div class="col-md-8 col-lg-5">
+        <div class="card auth-card border-0">
+            <div class="card-header text-center py-4">
+                <h2 class="h4 mb-1">Log in</h2>
+                <p class="text-muted mb-0">Use your project account details.</p>
+            </div>
+            <div class="card-body p-4 p-lg-5">
                 
                 <?php if ($expired_msg): ?>
                     <div class="alert alert-warning">
@@ -110,17 +136,25 @@ include 'header.php';
                 <form method="POST" action="login.php">
                     <div class="mb-3">
                         <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" 
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input type="email" class="form-control" id="email" name="email"
                                value="<?php echo htmlspecialchars($email); ?>" required autofocus>
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-key"></i></span>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
                     </div>
 
                     <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-dark btn-lg">Login</button>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Login
+                        </button>
                     </div>
                     
                     <div class="mt-3 text-center">

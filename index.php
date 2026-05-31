@@ -13,72 +13,90 @@ $catStmt = $pdo->query("SELECT category_id, category_name FROM dbProj_job_catego
 $formCategories = $catStmt->fetchAll();
 ?>
 
-<div class="row">
-    <div class="col-12 text-center py-5">
-        <h1 class="display-4">Find Your Dream Job</h1>
-        <p class="lead">Search through top companies and exclusive opportunities.</p>
-        
-        <div class="card shadow-sm mt-4 text-start">
-            <div class="card-body bg-light">
-                <form method="GET" action="index.php">
-                    <div class="row g-3">
-
-                        <div class="col-md-12">
-                            <label class="form-label fw-bold">Keyword (Job Title or Description)</label>
-                            <input type="text" name="search_keyword" class="form-control" placeholder="e.g. Developer, Designer..." value="<?= isset($_GET['search_keyword']) ? htmlspecialchars($_GET['search_keyword']) : '' ?>">
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Employer</label>
-                            <select name="search_employer" class="form-select">
-                                <option value="">All Employers</option>
-                                <?php foreach ($employers as $emp): ?>
-                                    <option value="<?= $emp['employer_id'] ?>" <?= (isset($_GET['search_employer']) && $_GET['search_employer'] == $emp['employer_id']) ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($emp['company_name']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Posted After</label>
-                            <input type="date" name="search_date_from" class="form-control" value="<?= isset($_GET['search_date_from']) ? htmlspecialchars($_GET['search_date_from']) : '' ?>">
-                        </div>
-
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Sort By</label>
-                            <select name="sort_by" class="form-select">
-                                <option value="newest" <?= (isset($_GET['sort_by']) && $_GET['sort_by'] == 'newest') ? 'selected' : '' ?>>Newest First</option>
-                                <option value="popularity" <?= (isset($_GET['sort_by']) && $_GET['sort_by'] == 'popularity') ? 'selected' : '' ?>>Most Popular</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-3">
-                            <label class="form-label fw-bold">Category</label>
-                            <select name="search_category" class="form-select">
-                                <option value="">All Categories</option>
-                                <?php foreach ($formCategories as $c): ?>
-                                    <option value="<?= $c['category_id'] ?>" <?= (isset($_GET['search_category']) && $_GET['search_category'] == $c['category_id']) ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($c['category_name']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">Search</button>
-                        </div>
-
-                    </div>
-                </form>
+<section class="page-hero mb-4">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+            <span class="eyebrow"><i class="bi bi-stars"></i> IT8415 Job Portal</span>
+            <h1 class="display-5 fw-bold mb-3">Find Your Dream Job</h1>
+            <p class="lead mb-0">Search through top companies and exclusive opportunities.</p>
+        </div>
+        <div class="col-lg-5">
+            <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+                <span class="hero-metric"><i class="bi bi-building"></i> Top employers</span>
+                <span class="hero-metric"><i class="bi bi-lightning-charge"></i> Fresh postings</span>
             </div>
         </div>
     </div>
-</div>
+</section>
+
+<section class="search-panel mb-5">
+    <div class="card border-0">
+        <div class="card-body p-4">
+            <form method="GET" action="index.php">
+                <div class="row g-3">
+
+                    <div class="col-lg-5">
+                        <label class="form-label">Keyword</label>
+                        <input type="text" name="search_keyword" class="form-control" placeholder="Developer, designer, analyst..." value="<?= isset($_GET['search_keyword']) ? htmlspecialchars($_GET['search_keyword']) : '' ?>">
+                    </div>
+
+                    <div class="col-md-6 col-lg-3">
+                        <label class="form-label">Employer</label>
+                        <select name="search_employer" class="form-select">
+                            <option value="">All Employers</option>
+                            <?php foreach ($employers as $emp): ?>
+                                <option value="<?= $emp['employer_id'] ?>" <?= (isset($_GET['search_employer']) && $_GET['search_employer'] == $emp['employer_id']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($emp['company_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <label class="form-label">Category</label>
+                        <select name="search_category" class="form-select">
+                            <option value="">All Categories</option>
+                            <?php foreach ($formCategories as $c): ?>
+                                <option value="<?= $c['category_id'] ?>" <?= (isset($_GET['search_category']) && $_GET['search_category'] == $c['category_id']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($c['category_name']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Posted After</label>
+                        <input type="date" name="search_date_from" class="form-control" value="<?= isset($_GET['search_date_from']) ? htmlspecialchars($_GET['search_date_from']) : '' ?>">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Sort By</label>
+                        <select name="sort_by" class="form-select">
+                            <option value="newest" <?= (isset($_GET['sort_by']) && $_GET['sort_by'] == 'newest') ? 'selected' : '' ?>>Newest First</option>
+                            <option value="popularity" <?= (isset($_GET['sort_by']) && $_GET['sort_by'] == 'popularity') ? 'selected' : '' ?>>Most Popular</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-1"></i>Search
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
 
 <div class="row mt-4">
-    <div class="col-12 mb-3">
-        <h3>Latest Jobs</h3>
+    <div class="col-12">
+        <div class="section-heading">
+            <div>
+                <h2 class="h3 fw-bold mb-1">Latest Jobs</h2>
+                <p>Recently published roles from the project database.</p>
+            </div>
+        </div>
     </div>
 
 <?php
@@ -165,31 +183,40 @@ $formCategories = $catStmt->fetchAll();
         foreach ($jobs as $job): 
     ?>
             <div class="col-md-6 mb-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title text-primary"><?= htmlspecialchars($job['title']) ?></h5>
-                        <h6 class="card-subtitle mb-2 text-muted">
-                            <span class="badge bg-secondary"><?= htmlspecialchars($job['employment_type']) ?></span>
-                            <?= htmlspecialchars($job['location']) ?>
-                        </h6>
+                <article class="card job-card h-100">
+                    <div class="card-body p-4">
+                        <h3 class="h5 card-title mb-3">
+                            <a class="text-decoration-none" href="job_details.php?id=<?= $job['job_id'] ?>">
+                                <?= htmlspecialchars($job['title']) ?>
+                            </a>
+                        </h3>
+                        <div class="job-meta">
+                            <span class="badge text-bg-secondary"><?= htmlspecialchars($job['employment_type']) ?></span>
+                            <span><i class="bi bi-geo-alt me-1"></i><?= htmlspecialchars($job['location']) ?></span>
+                        </div>
                         <p class="card-text mt-3">
                             <?= htmlspecialchars($job['short_description']) ?>
                         </p>
                     </div>
-                    <div class="card-footer bg-white border-top-0">
-                        <a href="job_details.php?id=<?= $job['job_id'] ?>" class="btn btn-outline-primary btn-sm">View More</a>
-                        <small class="text-muted float-end mt-1">
-                            Posted: <?= date('M d, Y', strtotime($job['published_at'])) ?>
+                    <div class="card-footer bg-white d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                        <a href="job_details.php?id=<?= $job['job_id'] ?>" class="btn btn-outline-primary btn-sm">
+                            View More <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                        <small class="text-muted">
+                            <i class="bi bi-calendar3 me-1"></i><?= date('M d, Y', strtotime($job['published_at'])) ?>
                         </small>
                     </div>
-                </div>
+                </article>
             </div>
     <?php 
         endforeach; 
     else: 
     ?>
         <div class="col-12">
-            <div class="alert alert-info">No jobs found. Check back later!</div>
+            <div class="empty-state p-4 text-center text-muted">
+                <i class="bi bi-search fs-2 d-block mb-2"></i>
+                No jobs found. Check back later!
+            </div>
         </div>
     <?php endif; ?>
     <?php if ($totalPages > 1): ?>
@@ -197,7 +224,7 @@ $formCategories = $catStmt->fetchAll();
             <ul class="pagination justify-content-center">
                 
                 <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
-                    <a class="page-link" href="?page=<?= $page - 1 ?>">Previous</a>
+                    <a class="page-link" href="?page=<?= $page - 1 ?>"><i class="bi bi-chevron-left me-1"></i>Previous</a>
                 </li>
                 
                 <?php for ($i = 1; $i <= $totalPages; $i++): ?>
@@ -207,7 +234,7 @@ $formCategories = $catStmt->fetchAll();
                 <?php endfor; ?>
                 
                 <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
-                    <a class="page-link" href="?page=<?= $page + 1 ?>">Next</a>
+                    <a class="page-link" href="?page=<?= $page + 1 ?>">Next<i class="bi bi-chevron-right ms-1"></i></a>
                 </li>
                 
             </ul>
