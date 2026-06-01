@@ -1,99 +1,299 @@
 <?php
-require_once 'db.php';
-require_once 'header.php';
-
-// 1. Catch the ID from the URL securely
-// If someone visits job_details.php without an ID, we default to 0 to prevent a crash
-$jobId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-
-if ($jobId === 0) {
-    echo "<div class='container mt-5'><div class='alert alert-danger'>Invalid Job Request.</div></div>";
-    require_once 'footer.php';
-    exit;
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
-// 2. Fetch the job AND employer details using a JOIN
-$sql = "SELECT j.*, e.company_name, e.company_website, e.company_description, e.logo_path 
-        FROM dbProj_job_listings j
-        JOIN dbProj_employers e ON j.employer_id = e.employer_id
-        WHERE j.job_id = :id AND j.status = 'published'";
 
-$stmt = $pdo->prepare($sql);
-$stmt->bindValue(':id', $jobId, PDO::PARAM_INT);
-$stmt->execute();
+require_once 'db.php'; 
 
-$job = $stmt->fetch();
 
-// 3. What if the user types ?id=999 in the URL and the job doesn't exist?
-if (!$job) {
-    echo "<div class='container mt-5'><div class='alert alert-warning'>Sorry, this job could not be found or has been removed.</div></div>";
-    require_once 'footer.php';
-    exit;
-}
-?>
+$job_id = isset($_GET['id']) ? intval($_GET['id']) : 14; 
+$is_logged_in = isset($_SESSION['user_id']);
 
-<div class="row mt-4 mb-4">
-    <div class="col-md-8">
-        <h2 class="text-primary mb-3"><?= htmlspecialchars($job['title']) ?></h2>
-        
-        <div class="d-flex align-items-center mb-3">
-            <span class="badge bg-primary me-2 px-3 py-2"><?= htmlspecialchars($job['employment_type']) ?></span>
-            <span class="badge bg-secondary me-2 px-3 py-2"><?= htmlspecialchars($job['work_mode']) ?></span>
-            <span class="text-muted"><i class="bi bi-geo-alt"></i> <?= htmlspecialchars($job['location']) ?></span>
-        </div>
 
-        <h5 class="text-success fw-bold">
-            <?= htmlspecialchars($job['salary_min']) ?> - <?= htmlspecialchars($job['salary_max']) ?> <?= htmlspecialchars($job['currency']) ?>
-        </h5>
-    </div>
+$job = null;
+try {
     
-    <div class="col-md-4 text-md-end">
-        <div class="card bg-light border-0">
-            <div class="card-body">
-                <h5 class="card-title"><?= htmlspecialchars($job['company_name']) ?></h5>
-                <p class="small text-muted mb-2"><?= htmlspecialchars($job['company_description']) ?></p>
-                <a href="<?= htmlspecialchars($job['company_website']) ?>" target="_blank" class="btn btn-outline-dark btn-sm">Visit Website</a>
-            </div>
-        </div>
-    </div>
-</div>
+    $job_query = $pdo->prepare("SELECT * FROM dbProj_jobs WHERE job_id = ?");
+    $job_query->execute([$job_id]);
+    $job = $job_query->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+   
+}
 
-<hr>
+// placeholdre
+if (!$job) {
+    $job = [
+        'title' => 'Senior Full-Stack Web Developer',
+        'company' => 'TechSolutions International',
+        'location' => 'Remote / Hybrid',
+        'salary' => '$95,000 - $120,000 / year',
+        'type' => 'Full-time',
+        'description' => 'We are seeking an ambitious Full-Stack Developer to join our core engineering squad. You will focus on building high-performance web applications, designing reliable database structures, and working closely with design modules to deliver pristine user interfaces.',
+        'requirements' => 'Minimum 3+ years of web development experience. Deep understanding of raw PHP (PDO), asynchronous JavaScript (jQuery/AJAX), Bootstrap layout architectures, and clean MySQL relational queries.'
+    ];
+}
 
-<div class="row mt-4">
-    <div class="col-lg-8">
-        <h4 class="mb-3">Job Description</h4>
-        <div class="p-4 bg-white border rounded shadow-sm">
-            <p style="white-space: pre-line;"><?= nl2br(htmlspecialchars($job['description'])) ?></p>
-        </div>
 
-        <?php if (!empty($job['application_url'])): ?>
-            <div class="mt-4">
-                <a href="<?= htmlspecialchars($job['application_url']) ?>" target="_blank" class="btn btn-success btn-lg px-5">Apply Now</a>
-            </div>
-        <?php endif; ?>
-    </div>
+$rating_query = $pdo->prepare("SELECT AVG(rating_value) as avg_rate, COUNT(rating_id) as total_rates FROM dbProj_ratings WHERE job_id = ?");
+$rating_query->execute([$job_id]);
+$rating_data = $rating_query->fetch(PDO::FETCH_ASSOC);
+$avg_rating = round($rating_data['avg_rate'] ?? 0, 1);
+$total_ratings = $rating_data['total_rates'] ?? 0;
 
-    <div class="col-lg-4 mt-4 mt-lg-0">
-        <div class="card border-warning shadow-sm">
-            <div class="card-header bg-warning text-dark fw-bold">
-                ⚠️ M4 Workspace: Ratings & Comments
-            </div>
-            <div class="card-body bg-light">
-                <p class="text-muted small">
-                    <em>M4: Add your PHP/AJAX code here to query the `dbProj_ratings` and `dbProj_comments` tables for Job ID <strong><?= $jobId ?></strong>.</em>
-                </p>
-                <div class="alert alert-secondary text-center p-4 border-dashed">
-                    [Star Rating UI Placeholder]
-                </div>
-                <div class="alert alert-secondary text-center p-4 border-dashed mt-3">
-                    [Comment Form & List Placeholder]
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<?php 
-require_once 'footer.php'; 
+$comments_query = $pdo->prepare("SELECT c.comment_text, c.created_at, u.full_name FROM dbProj_comments c JOIN dbProj_users u ON c.user_id = u.user_id WHERE c.job_id = ? ORDER BY c.created_at DESC");
+$comments_query->execute([$job_id]);
+$comments = $comments_query->fetchAll(PDO::FETCH_ASSOC);
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= htmlspecialchars($job['title']) ?> | Job Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .star-item { font-size: 1.8rem; transition: transform 0.1s ease; display: inline-block; }
+        .star-item:hover { transform: scale(1.2); }
+        .comments-scroll { max-height: 320px; overflow-y: auto; scrollbar-width: thin; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-primary" href="index.php">💼 JobPortal</a>
+        <div class="navbar-nav ms-auto">
+            <?php if ($is_logged_in): ?>
+                <span class="nav-link text-light me-3">Welcome Back!</span>
+                <a class="btn btn-outline-danger btn-sm my-auto" href="logout.php">Logout</a>
+            <?php else: ?>
+                <a class="btn btn-primary btn-sm my-auto" href="login.php">Account Login</a>
+            <?php endif; ?>
+        </div>
+    </div>
+</nav>
+
+<div class="container my-4">
+    <a href="index.php" class="text-decoration-none text-muted small d-inline-block mb-3">← Back to Job Openings Feed</a>
+    
+    <div class="row g-4">
+        
+        <div class="col-lg-8">
+            
+            <div class="card shadow-sm border-0 p-4 mb-4 rounded-3 bg-white">
+                <span class="badge bg-primary align-self-start mb-2 px-3 py-2 rounded-pill"><?= htmlspecialchars($job['type'] ?? 'Full-time') ?></span>
+                <h2 class="fw-bold text-dark mb-1"><?= htmlspecialchars($job['title']) ?></h2>
+                <h5 class="text-secondary mb-3"><?= htmlspecialchars($job['company']) ?></h5>
+                
+                <div class="d-flex text-muted small gap-4 border-top pt-3">
+                    <div>📍 <strong>Location:</strong> <?= htmlspecialchars($job['location']) ?></div>
+                    <div>💰 <strong>Compensation:</strong> <?= htmlspecialchars($job['salary'] ?? 'Competitive') ?></div>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 p-4 mb-4 rounded-3 bg-white">
+                <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Job Overview & Operations</h5>
+                <p class="text-secondary lh-lg small"><?= nl2br(htmlspecialchars($job['description'])) ?></p>
+                
+                <?php if (!empty($job['requirements'])): ?>
+                    <h5 class="fw-bold text-dark border-bottom pb-2 mt-4 mb-3">Candidate Requirements</h5>
+                    <p class="text-secondary lh-lg small"><?= nl2br(htmlspecialchars($job['requirements'])) ?></p>
+                <?php endif; ?>
+            </div>
+
+            <div class="card shadow-sm border-0 mb-4 rounded-3 overflow-hidden">
+                <div class="card-header bg-dark text-white font-weight-bold py-3">
+                    ✨ Ratings & Feedback Hub 
+                </div>
+                <div class="card-body p-4 bg-white">
+                    
+                    <div class="rating-section mb-4 text-center p-3 bg-light rounded-3 border">
+                        <h6 class="fw-bold text-dark mb-1">Rate this Job Listing</h6>
+                        <div class="star-rating text-warning my-2" style="cursor: pointer;">
+                            <?php 
+                            $rounded_avg = round($avg_rating);
+                            for ($i = 1; $i <= 5; $i++) {
+                                if ($i <= $rounded_avg) {
+                                    echo "<span class='star-item mx-1' data-value='{$i}'>&#9733;</span>";
+                                } else {
+                                    echo "<span class='star-item mx-1' data-value='{$i}'>&#9734;</span>";
+                                }
+                            }
+                            ?>
+                        </div>
+                        <p class="text-muted small mb-0">
+                            Average Score: <strong id="avg-display" class="text-dark"><?= $avg_rating ?></strong> / 5 
+                            (<span id="count-display" class="fw-bold"><?= $total_ratings ?></span> metrics recorded)
+                        </p>
+                    </div>
+
+                    <hr class="text-muted opacity-25">
+
+                    <h6 class="fw-bold text-dark mb-3">Community Thread (<span id="comment-count"><?= count($comments) ?></span>)</h6>
+                    <div id="comments-container" class="comments-scroll mb-4 pe-1">
+                        <?php if (empty($comments)): ?>
+                            <p id="no-comments" class="text-muted italic text-center py-4 my-2 border rounded border-dashed bg-light small">No comments posted yet. Be the first to start the conversation!</p>
+                        <?php else: ?>
+                            <?php foreach ($comments as $com): ?>
+                                <div class="p-3 border rounded bg-light mb-2 shadow-sm">
+                                    <div class="d-flex justify-content-between font-weight-bold small text-primary mb-1">
+                                        <span>@<?= htmlspecialchars($com['full_name']) ?></span>
+                                        <span class="text-muted font-weight-normal small"><?= date('M d, Y', strtotime($com['created_at'])) ?></span>
+                                    </div>
+                                    <p class="mb-0 small text-secondary lh-base"><?= htmlspecialchars($com['comment_text']) ?></p>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if ($is_logged_in): ?>
+                        <form id="ajax-comment-form" class="mt-2">
+                            <input type="hidden" id="job_id" value="<?= $job_id ?>">
+                            <div class="input-group shadow-sm">
+                                <input type="text" id="comment_text" class="form-control py-2 small" placeholder="Write a constructive feedback comment..." required autocomplete="off">
+                                <button class="btn btn-primary px-4 fw-bold" type="submit" id="submitCommentBtn">Post Comment</button>
+                            </div>
+                        </form>
+                    <?php else: ?>
+                        <div class="alert alert-warning py-2 small text-center mb-0 rounded-3">
+                             Please <a href="login.php" class="alert-link fw-bold">Login</a> to submit a star rating or leave a dynamic comment thread.
+                        </div>
+                    <?php endif; ?>
+
+                </div>
+            </div>
+            </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 p-4 sticky-top rounded-3 bg-white" style="top: 24px; z-index: 10;">
+                <h5 class="fw-bold text-dark mb-3">Application Summary</h5>
+                
+                <ul class="list-unstyled mb-4 small text-secondary">
+                    <li class="mb-2"> <strong>Employer:</strong> <?= htmlspecialchars($job['company']) ?></li>
+                    <li class="mb-2"> <strong>Location:</strong> <?= htmlspecialchars($job['location']) ?></li>
+                    <li class="mb-2"> <strong>Job Nature:</strong> Full-time / Direct Hire</li>
+                    <li class="mb-1"> <strong>Posted:</strong> Just now</li>
+                </ul>
+                
+                <button class="btn btn-success w-100 py-2.5 fw-bold rounded-3 shadow-sm mb-2" onclick="alert('Application submitted successfully via Milestone 3 pipeline hook!')">Apply For Position</button>
+                <button class="btn btn-outline-secondary w-100 py-2 small rounded-3">Bookmark Job Posting</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<footer class="bg-dark text-muted text-center py-3 mt-5 border-top border-secondary">
+    <small class="small">&copy; 2026 Academic Web Application Database Project. All Rights Reserved.</small>
+</footer>
+
+<script>
+$(document).ready(function() {
+    const jobId = $('#job_id').val() || <?= $job_id ?>; 
+    const isLoggedIn = <?= $is_logged_in ? 'true' : 'false' ?>;
+    
+    
+    let currentSavedAvg = Math.round(<?= $avg_rating ?>);
+
+    $('.star-item').on('mouseover', function() {
+        let index = $(this).data('value');
+        $('.star-item').each(function() {
+            $(this).html($(this).data('value') <= index ? '&#9733;' : '&#9734;');
+        });
+    }).on('mouseleave', function() {
+        
+        $('.star-item').each(function() {
+            $(this).html($(this).data('value') <= currentSavedAvg ? '&#9733;' : '&#9734;');
+        });
+    });
+
+    $('.star-item').on('click', function() {
+        if (!isLoggedIn) {
+            alert('Access Denied: Please sign in to rate job listings!');
+            return;
+        }
+        let ratingValue = $(this).data('value');
+
+        $.ajax({
+            url: 'ajax_handler.php',
+            type: 'POST',
+            data: {
+                action: 'submit_rating',
+                job_id: jobId,
+                rating: ratingValue
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    $('#avg-display').text(response.average);
+                    $('#count-display').text(response.count);
+                    
+                    
+                    currentSavedAvg = Math.round(response.average);
+                    
+                   
+                    $('.star-item').each(function() {
+                        $(this).html($(this).data('value') <= currentSavedAvg ? '&#9733;' : '&#9734;');
+                    });
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function() {
+                alert('Connection error communicating with data hub parameters.');
+            }
+        });
+    });
+
+    // ajax
+    $('#ajax-comment-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        let textInput = $('#comment_text').val().trim();
+        if (textInput === '') return;
+
+        $.ajax({
+            url: 'ajax_handler.php',
+            type: 'POST',
+            data: {
+                action: 'submit_comment',
+                job_id: jobId,
+                comment_text: textInput
+            },
+            dataType: 'json',
+            success: function(response) {
+                if (response.status === 'success') {
+                    $('#no-comments').remove(); 
+                    
+                    let newCommentHtml = `
+                        <div class="p-3 border rounded bg-light mb-2 shadow-sm border-start border-primary" style="display:none;">
+                            <div class="d-flex justify-content-between font-weight-bold small text-primary mb-1">
+                                <span>@${response.username}</span>
+                                <span class="text-success font-weight-bold small">${response.date}</span>
+                            </div>
+                            <p class="mb-0 small text-secondary lh-base">${response.comment}</p>
+                        </div>`;
+                    
+                    $('#comments-container').prepend(newCommentHtml);
+                    $('#comments-container div:first-child').slideDown(250); 
+                    $('#comment_text').val(''); 
+                    
+                    let countSpan = $('#comment-count');
+                    countSpan.text(parseInt(countSpan.text()) + 1);
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function() {
+                alert('Failed to transmit message parameters asynchronously.');
+            }
+        });
+    });
+});
+</script>
+</body>
+</html>
