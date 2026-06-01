@@ -3,48 +3,82 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-
 require_once 'db.php'; 
-
 
 $job_id = isset($_GET['id']) ? intval($_GET['id']) : 14; 
 $is_logged_in = isset($_SESSION['user_id']);
 
-
 $job = null;
 try {
+    // FIX: Added a LEFT JOIN to the dbProj_employers table to pull the actual company_name
+    $job_query = $conn->prepare("
+        SELECT j.*, e.company_name 
+        FROM dbProj_job_listings j
+        LEFT JOIN dbProj_employers e ON j.employer_id = e.employer_id
+        WHERE j.job_id = ?
+    ");
     
-    $job_query = $pdo->prepare("SELECT * FROM dbProj_jobs WHERE job_id = ?");
-    $job_query->execute([$job_id]);
-    $job = $job_query->fetch(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-   
+    if ($job_query) {
+        $job_query->bind_param("i", $job_id);
+        $job_query->execute();
+        $result = $job_query->get_result();
+        $job = $result->fetch_assoc();
+        $job_query->close();
+    }
+} catch (Exception $e) {
+    // Silently catch errors to allow the placeholder block to load if the DB fails
 }
 
-// placeholdre
+// Placeholder fallback for testing
 if (!$job) {
     $job = [
         'title' => 'Senior Full-Stack Web Developer',
-        'company' => 'TechSolutions International',
+        'company_name' => 'TechSolutions International',
         'location' => 'Remote / Hybrid',
         'salary' => '$95,000 - $120,000 / year',
         'type' => 'Full-time',
         'description' => 'We are seeking an ambitious Full-Stack Developer to join our core engineering squad. You will focus on building high-performance web applications, designing reliable database structures, and working closely with design modules to deliver pristine user interfaces.',
-        'requirements' => 'Minimum 3+ years of web development experience. Deep understanding of raw PHP (PDO), asynchronous JavaScript (jQuery/AJAX), Bootstrap layout architectures, and clean MySQL relational queries.'
+        'requirements' => 'Minimum 3+ years of web development experience. Deep understanding of raw PHP, asynchronous JavaScript (jQuery/AJAX), Bootstrap layout architectures, and clean MySQL relational queries.'
     ];
 }
 
+// Fetch Ratings
+$avg_rating = 0;
+$total_ratings = 0;
+try {
+    $rating_query = $conn->prepare("SELECT AVG(rating_value) as avg_rate, COUNT(rating_id) as total_rates FROM dbProj_ratings WHERE job_id = ?");
+    if ($rating_query) {
+        $rating_query->bind_param("i", $job_id);
+        $rating_query->execute();
+        $rating_result = $rating_query->get_result();
+        $rating_data = $rating_result->fetch_assoc();
+        
+        $avg_rating = round($rating_data['avg_rate'] ?? 0, 1);
+        $total_ratings = $rating_data['total_rates'] ?? 0;
+        $rating_query->close();
+    }
+} catch (Exception $e) {}
 
-$rating_query = $pdo->prepare("SELECT AVG(rating_value) as avg_rate, COUNT(rating_id) as total_rates FROM dbProj_ratings WHERE job_id = ?");
-$rating_query->execute([$job_id]);
-$rating_data = $rating_query->fetch(PDO::FETCH_ASSOC);
-$avg_rating = round($rating_data['avg_rate'] ?? 0, 1);
-$total_ratings = $rating_data['total_rates'] ?? 0;
-
-
-$comments_query = $pdo->prepare("SELECT c.comment_text, c.created_at, u.full_name FROM dbProj_comments c JOIN dbProj_users u ON c.user_id = u.user_id WHERE c.job_id = ? ORDER BY c.created_at DESC");
-$comments_query->execute([$job_id]);
-$comments = $comments_query->fetchAll(PDO::FETCH_ASSOC);
+// Fetch Comments
+$comments = [];
+try {
+    $comments_query = $conn->prepare("
+        SELECT c.comment_text, c.created_at, u.full_name 
+        FROM dbProj_comments c 
+        JOIN dbProj_users u ON c.user_id = u.user_id 
+        WHERE c.job_id = ? 
+        ORDER BY c.created_at DESC
+    ");
+    if ($comments_query) {
+        $comments_query->bind_param("i", $job_id);
+        $comments_query->execute();
+        $comments_result = $comments_query->get_result();
+        if ($comments_result) {
+            $comments = $comments_result->fetch_all(MYSQLI_ASSOC);
+        }
+        $comments_query->close();
+    }
+} catch (Exception $e) {}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -87,17 +121,17 @@ $comments = $comments_query->fetchAll(PDO::FETCH_ASSOC);
             <div class="card shadow-sm border-0 p-4 mb-4 rounded-3 bg-white">
                 <span class="badge bg-primary align-self-start mb-2 px-3 py-2 rounded-pill"><?= htmlspecialchars($job['type'] ?? 'Full-time') ?></span>
                 <h2 class="fw-bold text-dark mb-1"><?= htmlspecialchars($job['title']) ?></h2>
-                <h5 class="text-secondary mb-3"><?= htmlspecialchars($job['company']) ?></h5>
+                <h5 class="text-secondary mb-3"><?= htmlspecialchars($job['company_name'] ?? 'Unknown Company') ?></h5>
                 
                 <div class="d-flex text-muted small gap-4 border-top pt-3">
-                    <div>📍 <strong>Location:</strong> <?= htmlspecialchars($job['location']) ?></div>
+                    <div>📍 <strong>Location:</strong> <?= htmlspecialchars($job['location'] ?? 'Not Specified') ?></div>
                     <div>💰 <strong>Compensation:</strong> <?= htmlspecialchars($job['salary'] ?? 'Competitive') ?></div>
                 </div>
             </div>
 
             <div class="card shadow-sm border-0 p-4 mb-4 rounded-3 bg-white">
                 <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Job Overview & Operations</h5>
-                <p class="text-secondary lh-lg small"><?= nl2br(htmlspecialchars($job['description'])) ?></p>
+                <p class="text-secondary lh-lg small"><?= nl2br(htmlspecialchars($job['description'] ?? 'No description provided.')) ?></p>
                 
                 <?php if (!empty($job['requirements'])): ?>
                     <h5 class="fw-bold text-dark border-bottom pb-2 mt-4 mb-3">Candidate Requirements</h5>
@@ -173,9 +207,9 @@ $comments = $comments_query->fetchAll(PDO::FETCH_ASSOC);
                 <h5 class="fw-bold text-dark mb-3">Application Summary</h5>
                 
                 <ul class="list-unstyled mb-4 small text-secondary">
-                    <li class="mb-2"> <strong>Employer:</strong> <?= htmlspecialchars($job['company']) ?></li>
-                    <li class="mb-2"> <strong>Location:</strong> <?= htmlspecialchars($job['location']) ?></li>
-                    <li class="mb-2"> <strong>Job Nature:</strong> Full-time / Direct Hire</li>
+                    <li class="mb-2"> <strong>Employer:</strong> <?= htmlspecialchars($job['company_name'] ?? 'Unknown Company') ?></li>
+                    <li class="mb-2"> <strong>Location:</strong> <?= htmlspecialchars($job['location'] ?? 'Not Specified') ?></li>
+                    <li class="mb-2"> <strong>Job Nature:</strong> <?= htmlspecialchars($job['type'] ?? 'Full-time / Direct Hire') ?></li>
                     <li class="mb-1"> <strong>Posted:</strong> Just now</li>
                 </ul>
                 
@@ -196,7 +230,6 @@ $(document).ready(function() {
     const jobId = $('#job_id').val() || <?= $job_id ?>; 
     const isLoggedIn = <?= $is_logged_in ? 'true' : 'false' ?>;
     
-    
     let currentSavedAvg = Math.round(<?= $avg_rating ?>);
 
     $('.star-item').on('mouseover', function() {
@@ -205,7 +238,6 @@ $(document).ready(function() {
             $(this).html($(this).data('value') <= index ? '&#9733;' : '&#9734;');
         });
     }).on('mouseleave', function() {
-        
         $('.star-item').each(function() {
             $(this).html($(this).data('value') <= currentSavedAvg ? '&#9733;' : '&#9734;');
         });
@@ -232,10 +264,8 @@ $(document).ready(function() {
                     $('#avg-display').text(response.average);
                     $('#count-display').text(response.count);
                     
-                    
                     currentSavedAvg = Math.round(response.average);
                     
-                   
                     $('.star-item').each(function() {
                         $(this).html($(this).data('value') <= currentSavedAvg ? '&#9733;' : '&#9734;');
                     });
@@ -249,7 +279,7 @@ $(document).ready(function() {
         });
     });
 
-    // ajax
+    // AJAX Comment Submission
     $('#ajax-comment-form').on('submit', function(e) {
         e.preventDefault();
         

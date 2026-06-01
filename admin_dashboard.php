@@ -10,7 +10,6 @@ require_once 'db.php';
 // Security check
 require_role('admin');
 
-
 $message = '';
 $message_type = 'success';
 
@@ -27,33 +26,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $message = "You cannot deactivate your own account!";
                 $message_type = 'danger';
             } else {
-                $stmt = $pdo->prepare("UPDATE dbProj_users SET is_active = :status WHERE user_id = :id");
-                $stmt->execute(['status' => $new_status, 'id' => $uid]);
+                $stmt = $conn->prepare("UPDATE dbProj_users SET is_active = ? WHERE user_id = ?");
+                if (!$stmt) throw new Exception("Database prepare error: " . $conn->error);
+                
+                $stmt->bind_param("ii", $new_status, $uid);
+                $stmt->execute();
                 $message = "User status updated successfully.";
             }
         }
         
         if ($action === 'remove_job' && isset($_POST['job_id'])) {
             $jid = (int)$_POST['job_id'];
-            $stmt = $pdo->prepare("UPDATE dbProj_job_listings SET status = 'removed' WHERE job_id = :id");
-            $stmt->execute(['id' => $jid]);
+            $stmt = $conn->prepare("UPDATE dbProj_job_listings SET status = 'removed' WHERE job_id = ?");
+            if (!$stmt) throw new Exception("Database prepare error: " . $conn->error);
+            
+            $stmt->bind_param("i", $jid);
+            $stmt->execute();
             $message = "Job listing has been removed from public view.";
         }
         
         if ($action === 'delete_comment' && isset($_POST['comment_id'])) {
             $cid = (int)$_POST['comment_id'];
             // Delete the comment as per DB schema
-            $stmt = $pdo->prepare("
+            $stmt = $conn->prepare("
                 UPDATE dbProj_comments 
                 SET is_removed = TRUE, 
-                    removed_by_user_id = :admin_id, 
+                    removed_by_user_id = ?, 
                     removed_reason = 'Removed by administrator' 
-                WHERE comment_id = :id
+                WHERE comment_id = ?
             ");
-            $stmt->execute(['admin_id' => $_SESSION['user_id'], 'id' => $cid]);
+            if (!$stmt) throw new Exception("Database prepare error: " . $conn->error);
+            
+            $admin_id = (int)$_SESSION['user_id'];
+            $stmt->bind_param("ii", $admin_id, $cid);
+            $stmt->execute();
             $message = "Comment has been hidden.";
         }
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
         $message = "Error: " . $e->getMessage();
         $message_type = 'danger';
     }
@@ -62,33 +71,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 // Fetch Data for the Dashboard
 try {
     // Users
-    $users = $pdo->query("
+    $userResult = $conn->query("
         SELECT u.*, r.role_name 
         FROM dbProj_users u 
         JOIN dbProj_roles r ON u.role_id = r.role_id 
         ORDER BY u.created_at DESC
-    ")->fetchAll();
+    ");
+    if (!$userResult) throw new Exception($conn->error);
+    $users = $userResult->fetch_all(MYSQLI_ASSOC);
 
     // Active Job Listings
-    $jobs = $pdo->query("
+    $jobResult = $conn->query("
         SELECT j.job_id, j.title, e.company_name, j.status, j.created_at 
         FROM dbProj_job_listings j
         JOIN dbProj_employers e ON j.employer_id = e.employer_id
         WHERE j.status != 'removed'
         ORDER BY j.created_at DESC
-    ")->fetchAll();
+    ");
+    if (!$jobResult) throw new Exception($conn->error);
+    $jobs = $jobResult->fetch_all(MYSQLI_ASSOC);
 
     // Recent Comments
-    $comments = $pdo->query("
+    $commentResult = $conn->query("
         SELECT c.comment_id, c.comment_text, u.full_name, j.title as job_title, c.is_removed
         FROM dbProj_comments c
         JOIN dbProj_users u ON c.user_id = u.user_id
         JOIN dbProj_job_listings j ON c.job_id = j.job_id
         ORDER BY c.created_at DESC
         LIMIT 10
-    ")->fetchAll();
+    ");
+    if (!$commentResult) throw new Exception($conn->error);
+    $comments = $commentResult->fetch_all(MYSQLI_ASSOC);
 
-} catch (PDOException $e) {
+} catch (Exception $e) {
     die("Error loading dashboard data: " . $e->getMessage());
 }
 
@@ -124,7 +139,6 @@ include 'header.php';
 </ul>
 
 <div class="tab-content" id="adminTabsContent">
-    <!-- Users Management Tab -->
     <div class="tab-pane fade show active" id="users" role="tabpanel">
         <div class="table-responsive">
             <table class="table table-striped table-hover align-middle">
@@ -169,7 +183,6 @@ include 'header.php';
         </div>
     </div>
 
-    <!-- Job Listings Tab -->
     <div class="tab-pane fade" id="jobs" role="tabpanel">
         <div class="table-responsive">
             <table class="table table-striped table-hover align-middle">
@@ -207,7 +220,6 @@ include 'header.php';
         </div>
     </div>
 
-    <!-- Comments Tab -->
     <div class="tab-pane fade" id="comments" role="tabpanel">
         <div class="table-responsive">
             <table class="table table-striped table-hover align-middle">

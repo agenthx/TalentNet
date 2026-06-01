@@ -9,8 +9,8 @@ $sql = "SELECT c.category_id, c.category_name, c.category_description, COUNT(j.j
         GROUP BY c.category_id
         ORDER BY c.category_name ASC";
 
-$stmt = $pdo->query($sql);
-$categories = $stmt->fetchAll();
+$result = $conn->query($sql);
+$categories = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 
 <div class="row mt-4 mb-3">

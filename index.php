@@ -5,12 +5,12 @@ require_once 'db.php';
 require_once 'header.php'; 
 
 // Fetch Employers
-$empStmt = $pdo->query("SELECT employer_id, company_name FROM dbProj_employers ORDER BY company_name ASC");
-$employers = $empStmt->fetchAll();
+$empResult = $conn->query("SELECT employer_id, company_name FROM dbProj_employers ORDER BY company_name ASC");
+$employers = $empResult ? $empResult->fetch_all(MYSQLI_ASSOC) : [];
 
 // Fetch Categories
-$catStmt = $pdo->query("SELECT category_id, category_name FROM dbProj_job_categories ORDER BY category_name ASC");
-$formCategories = $catStmt->fetchAll();
+$catResult = $conn->query("SELECT category_id, category_name FROM dbProj_job_categories ORDER BY category_name ASC");
+$formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 
 <div class="row">
@@ -90,75 +90,83 @@ $formCategories = $catStmt->fetchAll();
 
     // 1. The Base Queries
     $sql = "SELECT * FROM dbProj_job_listings WHERE status = 'published'";
-    $countSql = "SELECT COUNT(*) FROM dbProj_job_listings WHERE status = 'published'";
+    $countSql = "SELECT COUNT(*) as total FROM dbProj_job_listings WHERE status = 'published'";
 
-    // Arrays to hold our dynamic filters and secure PDO parameters
+    // Arrays to hold dynamic MySQLi filters
     $conditions = [];
     $params = [];
+    $types = ""; // String to hold data types (s = string, i = integer)
 
     // 2. Keyword Search (FULLTEXT Index)
     if (!empty($_GET['search_keyword'])) {
-        $conditions[] = "MATCH(title, description) AGAINST(:keyword)";
-        $params[':keyword'] = $_GET['search_keyword'];
+        $conditions[] = "MATCH(title, description) AGAINST(?)";
+        $params[] = $_GET['search_keyword'];
+        $types .= "s";
     }
 
     // 3. Employer Search
     if (!empty($_GET['search_employer'])) {
-        $conditions[] = "employer_id = :employer";
-        $params[':employer'] = $_GET['search_employer'];
+        $conditions[] = "employer_id = ?";
+        $params[] = (int)$_GET['search_employer'];
+        $types .= "i";
     }
 
     // Category Search (Catches the button click from categories.php)
     if (!empty($_GET['search_category'])) {
-        $conditions[] = "category_id = :category";
-        $params[':category'] = $_GET['search_category'];
+        $conditions[] = "category_id = ?";
+        $params[] = (int)$_GET['search_category'];
+        $types .= "i";
     }
     
     // 4. Date Search (Posted After)
     if (!empty($_GET['search_date_from'])) {
-        $conditions[] = "published_at >= :date_from";
-        $params[':date_from'] = $_GET['search_date_from'] . ' 00:00:00';
+        $conditions[] = "published_at >= ?";
+        $params[] = $_GET['search_date_from'] . ' 00:00:00';
+        $types .= "s";
     }
 
     // 5. Append all conditions to the SQL strings
     if (count($conditions) > 0) {
         $whereClause = " AND " . implode(" AND ", $conditions);
         $sql .= $whereClause;
-        $countSql .= $whereClause; // We must filter the count query too, so pagination adapts!
+        $countSql .= $whereClause;
     }
 
     // 6. Sorting Logic (Newest vs Popularity)
     $sortBy = $_GET['sort_by'] ?? 'newest';
     if ($sortBy === 'popularity') {
-        // Sort by the total number of views in the dbProj_job_views table
         $sql .= " ORDER BY (SELECT COUNT(*) FROM dbProj_job_views WHERE job_id = dbProj_job_listings.job_id) DESC";
     } else {
         $sql .= " ORDER BY published_at DESC";
     }
 
     // Add final limits for pagination
-    $sql .= " LIMIT :limit OFFSET :offset";
+    $sql .= " LIMIT ? OFFSET ?";
 
     // --- EXECUTE THE COUNT (For accurate page numbers) ---
-    $countStmt = $pdo->prepare($countSql);
-    foreach ($params as $key => $val) {
-        $countStmt->bindValue($key, $val);
+    $countStmt = $conn->prepare($countSql);
+    if (!empty($params)) {
+        // Use the splat operator (...) to unpack the dynamic parameters array
+        $countStmt->bind_param($types, ...$params);
     }
     $countStmt->execute();
-    $totalJobs = $countStmt->fetchColumn();
+    $countResult = $countStmt->get_result();
+    $totalJobs = $countResult->fetch_assoc()['total'];
     $totalPages = ceil($totalJobs / $limit);
 
     // --- EXECUTE THE MAIN SEARCH ---
-    $stmt = $pdo->prepare($sql);
-    foreach ($params as $key => $val) {
-        $stmt->bindValue($key, $val); 
-    }
-    // Bind the pagination numbers explicitly as integers
-    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT); 
-    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT); 
-    $stmt->execute();
+    // We need a separate array for the main query because it includes the LIMIT and OFFSET integers
+    $mainParams = $params;
+    $mainParams[] = $limit;
+    $mainParams[] = $offset;
+    $mainTypes = $types . "ii"; // Add two integers for limit and offset
 
-    $jobs = $stmt->fetchAll();
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param($mainTypes, ...$mainParams);
+    $stmt->execute();
+    
+    $jobsResult = $stmt->get_result();
+    $jobs = $jobsResult ? $jobsResult->fetch_all(MYSQLI_ASSOC) : [];
     
     // Loop through the array to generate Bootstrap cards
     if ($jobs): 

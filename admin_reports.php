@@ -11,18 +11,33 @@ require_once 'db.php';
 // Security check
 require_role('admin');
 
-
 $start_date = $_GET['start_date'] ?? date('Y-m-d', strtotime('-30 days'));
 $end_date = $_GET['end_date'] ?? date('Y-m-d');
 $popular_jobs = [];
 
 try {
-    $stmt = $pdo->prepare("CALL dbProj_get_top_rated_jobs(:start_date, :end_date, NULL, 10)");
-    $stmt->execute(['start_date' => $start_date, 'end_date' => $end_date]);
-    $popular_jobs = $stmt->fetchAll();
+    // MySQLi: Use ? placeholders for the stored procedure
+    $stmt = $conn->prepare("CALL dbProj_get_top_rated_jobs(?, ?, NULL, 10)");
+    if (!$stmt) throw new Exception("Database prepare error: " . $conn->error);
+    
+    // "ss" = string (start_date), string (end_date)
+    $stmt->bind_param("ss", $start_date, $end_date);
+    $stmt->execute();
+    
+    $result = $stmt->get_result();
+    if ($result) {
+        $popular_jobs = $result->fetch_all(MYSQLI_ASSOC);
+    }
+    $stmt->close();
+    
+    // CRITICAL FIX FOR MYSQLI: Flush remaining results from the Stored Procedure
+    while ($conn->more_results() && $conn->next_result()) {
+        if ($extraResult = $conn->store_result()) {
+            $extraResult->free();
+        }
+    }
 
-    $stmt->closeCursor();
-} catch (PDOException $e) {
+} catch (Exception $e) {
     $error_msg = "Error fetching popular jobs: " . $e->getMessage();
 }
 
@@ -33,23 +48,46 @@ $employers = [];
 
 try {
     // List employers for the dropdown
-    $employers = $pdo->query("SELECT employer_id, company_name FROM dbProj_employers ORDER BY company_name ASC")->fetchAll();
+    $empResult = $conn->query("SELECT employer_id, company_name FROM dbProj_employers ORDER BY company_name ASC");
+    if (!$empResult) throw new Exception($conn->error);
+    $employers = $empResult->fetch_all(MYSQLI_ASSOC);
 
     if ($employer_id > 0) {
         // Find the owner user ID for the employer
-        $stmt = $pdo->prepare("SELECT owner_user_id FROM dbProj_employers WHERE employer_id = :id");
-        $stmt->execute(['id' => $employer_id]);
-        $owner_id = $stmt->fetchColumn();
+        $stmt = $conn->prepare("SELECT owner_user_id FROM dbProj_employers WHERE employer_id = ?");
+        if (!$stmt) throw new Exception("Database prepare error: " . $conn->error);
+        
+        $stmt->bind_param("i", $employer_id);
+        $stmt->execute();
+        $ownerResult = $stmt->get_result();
+        $ownerRow = $ownerResult->fetch_assoc();
+        $stmt->close();
+        
+        $owner_id = $ownerRow ? $ownerRow['owner_user_id'] : null;
         
         if ($owner_id) {
             // Call the stored procedure for jobs by the creator
-            $stmt = $pdo->prepare("CALL dbProj_get_jobs_by_creator(:owner_id)");
-            $stmt->execute(['owner_id' => $owner_id]);
-            $employer_jobs = $stmt->fetchAll();
-            $stmt->closeCursor();
+            $stmt = $conn->prepare("CALL dbProj_get_jobs_by_creator(?)");
+            if (!$stmt) throw new Exception("Database prepare error: " . $conn->error);
+            
+            $stmt->bind_param("i", $owner_id);
+            $stmt->execute();
+            
+            $jobsResult = $stmt->get_result();
+            if ($jobsResult) {
+                $employer_jobs = $jobsResult->fetch_all(MYSQLI_ASSOC);
+            }
+            $stmt->close();
+            
+            // CRITICAL FIX FOR MYSQLI: Flush remaining results from the Stored Procedure
+            while ($conn->more_results() && $conn->next_result()) {
+                if ($extraResult = $conn->store_result()) {
+                    $extraResult->free();
+                }
+            }
         }
     }
-} catch (PDOException $e) {
+} catch (Exception $e) {
     $error_msg = ($error_msg ?? '') . " Error fetching employer jobs: " . $e->getMessage();
 }
 
@@ -65,7 +103,6 @@ include 'header.php';
     <div class="alert alert-danger"><?php echo htmlspecialchars($error_msg); ?></div>
 <?php endif; ?>
 
-<!-- Report 1 -->
 <div class="card mb-4 shadow-sm">
     <div class="card-header bg-light">
         <h5 class="mb-0">Most Popular Jobs</h5>
@@ -74,11 +111,11 @@ include 'header.php';
         <form method="GET" class="row g-3 mb-4">
             <div class="col-md-4">
                 <label for="start_date" class="form-label">Start Date</label>
-                <input type="date" class="form-control" id="start_date" name="start_date" value="<?php echo $start_date; ?>">
+                <input type="date" class="form-control" id="start_date" name="start_date" value="<?php echo htmlspecialchars($start_date); ?>">
             </div>
             <div class="col-md-4">
                 <label for="end_date" class="form-label">End Date</label>
-                <input type="date" class="form-control" id="end_date" name="end_date" value="<?php echo $end_date; ?>">
+                <input type="date" class="form-control" id="end_date" name="end_date" value="<?php echo htmlspecialchars($end_date); ?>">
             </div>
             <div class="col-md-4 d-flex align-items-end">
                 <button type="submit" class="btn btn-primary w-100">Generate Report</button>
@@ -119,7 +156,6 @@ include 'header.php';
     </div>
 </div>
 
-<!-- Report 2 -->
 <div class="card shadow-sm">
     <div class="card-header bg-light">
         <h5 class="mb-0">Jobs by Employer</h5>

@@ -3,6 +3,8 @@
  * This file verifies the user email and password, then starts a secure session, 
  * and also implemented session expiry for security reasons
  */
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
 session_start();
 
@@ -12,7 +14,6 @@ if (isset($_SESSION['user_id'])) {
     header("Location: $dest");
     exit;
 }
-
 
 require_once 'db.php';
 
@@ -33,16 +34,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = "Please enter both email and password.";
     } else {
         try {
-            // Fetch the user by email by joining the roles table to get the role name immediately
-            $stmt = $pdo->prepare("
-                SELECT u.user_id, u.role_id, r.role_name, u.full_name, u.password_hash, u.is_active 
-                FROM dbProj_users u
-                JOIN dbProj_roles r ON u.role_id = r.role_id
-                WHERE u.email = :email
-                LIMIT 1
-            ");
-            $stmt->execute(['email' => $email]);
-            $user = $stmt->fetch();
+            // MySQLi uses '?' instead of named parameters
+            $sql = "SELECT u.user_id, u.role_id, r.role_name, u.full_name, u.password_hash, u.is_active 
+                    FROM dbProj_users u
+                    JOIN dbProj_roles r ON u.role_id = r.role_id
+                    WHERE u.email = ?
+                    LIMIT 1";
+                    
+            $stmt = $conn->prepare($sql);
+            
+            if (!$stmt) {
+                throw new Exception("Database prepare error: " . $conn->error);
+            }
+
+            // "s" tells MySQLi that the $email variable is a String
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            
+            // Get the result set and fetch it as an associative array
+            $result = $stmt->get_result();
+            $user = $result->fetch_assoc();
 
             // Verify password and account status
             if ($user && password_verify($password, $user['password_hash'])) {
@@ -71,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $errors[] = "Invalid email or password";
             }
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             $errors[] = "Database error: " . $e->getMessage();
         }
     }

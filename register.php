@@ -6,7 +6,6 @@
 
 require_once 'db.php';
 
-
 $errors = [];
 $full_name = '';
 $email = '';
@@ -45,12 +44,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Check if email exists
     if (empty($errors)) {
         try {
-            $stmt = $pdo->prepare("SELECT COUNT(*) FROM dbProj_users WHERE email = :email");
-            $stmt->execute(['email' => $email]);
-            if ($stmt->fetchColumn() > 0) {
+            // MySQLi implementation for checking existing email
+            $stmt = $conn->prepare("SELECT COUNT(*) AS total FROM dbProj_users WHERE email = ?");
+            if (!$stmt) {
+                throw new Exception("Database prepare error: " . $conn->error);
+            }
+            
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            
+            if ($row['total'] > 0) {
                 $errors[] = "This email is already registered. Please login in instead";
             }
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             $errors[] = "Database error: " . $e->getMessage();
         }
     }
@@ -60,28 +69,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Hashing password using bcrypt
             $password_hash = password_hash($password, PASSWORD_BCRYPT);
 
-            // Insert the new user into the database
-            $stmt = $pdo->prepare("
+            // Insert the new user into the database using MySQLi
+            $stmt = $conn->prepare("
                 INSERT INTO dbProj_users (role_id, full_name, email, password_hash, is_active) 
-                VALUES (:role_id, :full_name, :email, :password_hash, TRUE)
+                VALUES (?, ?, ?, ?, TRUE)
             ");
             
-            $stmt->execute([
-                'role_id' => $role_id,
-                'full_name' => $full_name,
-                'email' => $email,
-                'password_hash' => $password_hash
-            ]);
+            if (!$stmt) {
+                throw new Exception("Database prepare error: " . $conn->error);
+            }
+            
+            // "isss" = integer (role_id), string (full_name), string (email), string (password_hash)
+            $stmt->bind_param("isss", $role_id, $full_name, $email, $password_hash);
+            $stmt->execute();
 
             header("Location: login.php?registered=1");
             exit;
 
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             $errors[] = "Oops! Something went wrong while saving your account. Please try again.";
         }
     }
 }
-
 
 include 'header.php';
 ?>
@@ -156,8 +165,6 @@ include 'header.php';
 </div>
 
 <script>
-
-
 /* Client-side validation */
 document.getElementById('registrationForm').addEventListener('submit', function(event) {
     let isValid = true;
