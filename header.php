@@ -7,8 +7,7 @@
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css" rel="stylesheet">
-    
-    </head>
+</head>
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
@@ -27,15 +26,20 @@
         <li class="nav-item">
           <a class="nav-link" href="categories.php">Categories</a>
         </li>
+        
+        <?php 
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        
+        // ADDED: Direct Admin Dashboard link in main nav
+        if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+            <li class="nav-item">
+              <a class="nav-link" href="admin_dashboard.php">Admin Dashboard</a>
+            </li>
+        <?php endif; ?>
       </ul>
       
       <ul class="navbar-nav">
-        <?php 
-        // Check if user is logged in
-        if (session_status() === PHP_SESSION_NONE) session_start();
-        
-        if (isset($_SESSION['user_id'])): ?>
-          <!-- Displayed for logged in users -->
+        <?php if (isset($_SESSION['user_id'])): ?>
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               Hello, <?php echo htmlspecialchars($_SESSION['user_name']); ?> 
@@ -60,7 +64,6 @@
           <?php endif; ?>
 
         <?php else: ?>
-          <!-- Displayed for guests (non loged in) -->
           <li class="nav-item">
             <a class="nav-link" href="login.php">Login</a>
           </li>
