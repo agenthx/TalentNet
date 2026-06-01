@@ -4,11 +4,11 @@
 --   - Users, employers, job listings, comments, ratings are included.
 --   - FULLTEXT index is added on job title and description.
 
-CREATE DATABASE IF NOT EXISTS dbProj_job_portal
-  CHARACTER SET utf8mb4
-  COLLATE utf8mb4_unicode_ci;
+-- CREATE DATABASE IF NOT EXISTS dbProj_job_portal
+--   CHARACTER SET utf8mb4
+--   COLLATE utf8mb4_unicode_ci;
 
-USE dbProj_job_portal;
+-- USE dbProj_job_portal;
 
 SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS dbProj_job_views;

@@ -2,7 +2,7 @@
 -- Includes 15 published job listings: 5 per category.
 -- Demo password for all seeded users: password
 
-USE dbProj_job_portal;
+-- USE dbProj_job_portal;
 
 SET FOREIGN_KEY_CHECKS = 0;
 DELETE FROM dbProj_job_views;

@@ -1,6 +1,6 @@
 -- IT8415 Job Portal stored procedures
 
-USE dbProj_job_portal;
+-- USE dbProj_job_portal;
 
 DELIMITER $$
 
