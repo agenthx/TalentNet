@@ -143,7 +143,7 @@ include 'header.php';
                             <td><?php echo htmlspecialchars($job['company_name']); ?></td>
                             <td>
                                 <span class="text-warning">★</span> 
-                                <?php echo number_format($job['avg_rating'], 1); ?>
+                                <?php echo number_format($job['average_rating'] ?? 0, 1); ?>
                             </td>
                             <td><?php echo $job['rating_count']; ?></td>
                             <td><?php echo $job['view_count']; ?></td>
@@ -204,8 +204,8 @@ include 'header.php';
                                     <?php echo ucfirst($job['status']); ?>
                                 </span>
                             </td>
-                            <td><?php echo number_format($job['avg_rating'], 1); ?></td>
-                            <td><?php echo $job['visible_comment_count']; ?></td>
+                            <td><?php echo number_format($job['average_rating'] ?? 0, 1); ?></td>
+                            <td><?php echo $job['comment_count']; ?></td>
                         </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
