@@ -95,70 +95,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include 'header.php';
 ?>
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Create an Account</h4>
-            </div>
-            <div class="card-body p-4">
-                
-                <?php if (!empty($errors)): ?>
-                    <div class="alert alert-danger">
-                        <ul class="mb-0">
-                            <?php foreach ($errors as $error): ?>
-                                <li><?php echo htmlspecialchars($error); ?></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                <?php endif; ?>
-
-                <form id="registrationForm" method="POST" action="register.php" novalidate>
-                    <div class="mb-3">
-                        <label for="full_name" class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="full_name" name="full_name" 
-                               value="<?php echo htmlspecialchars($full_name); ?>" required>
-                        <div class="invalid-feedback">Please enter your name</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" 
-                               value="<?php echo htmlspecialchars($email); ?>" required>
-                        <div class="invalid-feedback">Please enter a valid email</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label d-block">I am a:</label>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="role_id" id="role_seeker" value="1" <?php echo $role_id == 1 ? 'checked' : ''; ?>>
-                            <label class="form-check-label" for="role_seeker">Job Seeker</label>
-                        </div>
-                        <div class="form-check form-check-inline">
-                            <input class="form-check-input" type="radio" name="role_id" id="role_employer" value="2" <?php echo $role_id == 2 ? 'checked' : ''; ?>>
-                            <label class="form-check-label" for="role_employer">Employer</label>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required minlength="6">
-                        <div class="small text-muted">Must be at least 6 characters</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="confirm_password" class="form-label">Confirm Password</label>
-                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-                    </div>
-
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">Sign Up</button>
-                    </div>
+<div class="auth-shell">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card auth-card">
+                <div class="card-header text-center">
+                    <span class="category-icon bg-white text-primary mb-3"><i class="bi bi-person-plus"></i></span>
+                    <h1 class="h4 mb-1">Create an Account</h1>
+                    <p class="mb-0 small opacity-75">Choose your role and join the job portal.</p>
+                </div>
+                <div class="card-body p-4">
                     
-                    <div class="mt-3 text-center">
-                        <p>Already have an account? <a href="login.php">Login here</a></p>
-                    </div>
-                </form>
+                    <?php if (!empty($errors)): ?>
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                <?php foreach ($errors as $error): ?>
+                                    <li><?php echo htmlspecialchars($error); ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                    <?php endif; ?>
+
+                    <form id="registrationForm" method="POST" action="register.php" novalidate>
+                        <div class="mb-3">
+                            <label for="full_name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" 
+                                   value="<?php echo htmlspecialchars($full_name); ?>" required>
+                            <div class="invalid-feedback">Please enter your name</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="<?php echo htmlspecialchars($email); ?>" required>
+                            <div class="invalid-feedback">Please enter a valid email</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label d-block">I am a:</label>
+                            <div class="soft-panel p-3">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="role_id" id="role_seeker" value="1" <?php echo $role_id == 1 ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="role_seeker">Job Seeker</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="role_id" id="role_employer" value="2" <?php echo $role_id == 2 ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="role_employer">Employer</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required minlength="6">
+                            <div class="small text-muted mt-1">Must be at least 6 characters</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-person-plus me-1"></i>Sign Up
+                            </button>
+                        </div>
+                        
+                        <div class="auth-note mt-3 text-center p-3">
+                            <p class="mb-0">Already have an account? <a href="login.php" class="fw-bold">Login here</a></p>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

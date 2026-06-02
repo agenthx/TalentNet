@@ -110,14 +110,18 @@ try {
 include 'header.php';
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Admin Dashboard</h1>
-    <div class="btn-toolbar mb-2 mb-md-0">
-        <div class="btn-group me-2">
-            <a href="admin_reports.php" class="btn btn-sm btn-outline-secondary">View Reports</a>
+<section class="section-hero mb-4">
+    <div class="d-flex justify-content-between flex-wrap align-items-center gap-3">
+        <div>
+            <div class="hero-kicker"><i class="bi bi-speedometer2"></i> Administrator</div>
+            <h1 class="h2 mb-2">Admin Dashboard</h1>
+            <p class="lead mb-0">Manage users, published listings, and recent comments.</p>
         </div>
+        <a href="admin_reports.php" class="btn btn-light">
+            <i class="bi bi-bar-chart-line me-1"></i>View Reports
+        </a>
     </div>
-</div>
+</section>
 
 <?php if ($message): ?>
     <div class="alert alert-<?php echo $message_type; ?> alert-dismissible fade show" role="alert">
@@ -125,6 +129,42 @@ include 'header.php';
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 <?php endif; ?>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <span class="stat-icon"><i class="bi bi-people"></i></span>
+                <div>
+                    <div class="text-muted small">Users</div>
+                    <div class="h4 mb-0 fw-bold"><?php echo count($users); ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <span class="stat-icon"><i class="bi bi-briefcase"></i></span>
+                <div>
+                    <div class="text-muted small">Active Listings</div>
+                    <div class="h4 mb-0 fw-bold"><?php echo count($jobs); ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <span class="stat-icon"><i class="bi bi-chat-square-text"></i></span>
+                <div>
+                    <div class="text-muted small">Recent Comments</div>
+                    <div class="h4 mb-0 fw-bold"><?php echo count($comments); ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
     <li class="nav-item" role="presentation">
@@ -140,9 +180,9 @@ include 'header.php';
 
 <div class="tab-content" id="adminTabsContent">
     <div class="tab-pane fade show active" id="users" role="tabpanel">
-        <div class="table-responsive">
+        <div class="table-responsive table-card">
             <table class="table table-striped table-hover align-middle">
-                <thead class="table-dark">
+                <thead>
                     <tr>
                         <th>Name</th>
                         <th>Email</th>
@@ -172,7 +212,7 @@ include 'header.php';
                                 <input type="hidden" name="user_id" value="<?php echo $user['user_id']; ?>">
                                 <input type="hidden" name="status" value="<?php echo $user['is_active'] ? 0 : 1; ?>">
                                 <button type="submit" class="btn btn-sm <?php echo $user['is_active'] ? 'btn-warning' : 'btn-success'; ?>">
-                                    <?php echo $user['is_active'] ? 'Deactivate' : 'Activate'; ?>
+                                    <i class="bi <?php echo $user['is_active'] ? 'bi-pause-circle' : 'bi-check-circle'; ?> me-1"></i><?php echo $user['is_active'] ? 'Deactivate' : 'Activate'; ?>
                                 </button>
                             </form>
                         </td>
@@ -184,9 +224,9 @@ include 'header.php';
     </div>
 
     <div class="tab-pane fade" id="jobs" role="tabpanel">
-        <div class="table-responsive">
+        <div class="table-responsive table-card">
             <table class="table table-striped table-hover align-middle">
-                <thead class="table-dark">
+                <thead>
                     <tr>
                         <th>Title</th>
                         <th>Employer</th>
@@ -210,7 +250,9 @@ include 'header.php';
                             <form method="POST" onsubmit="return confirm('Are you sure you want to remove this listing?');">
                                 <input type="hidden" name="action" value="remove_job">
                                 <input type="hidden" name="job_id" value="<?php echo $job['job_id']; ?>">
-                                <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+                                <button type="submit" class="btn btn-sm btn-danger">
+                                    <i class="bi bi-trash3 me-1"></i>Remove
+                                </button>
                             </form>
                         </td>
                     </tr>
@@ -221,9 +263,9 @@ include 'header.php';
     </div>
 
     <div class="tab-pane fade" id="comments" role="tabpanel">
-        <div class="table-responsive">
+        <div class="table-responsive table-card">
             <table class="table table-striped table-hover align-middle">
-                <thead class="table-dark">
+                <thead>
                     <tr>
                         <th>User</th>
                         <th>Job</th>
@@ -250,7 +292,9 @@ include 'header.php';
                                 <form method="POST" onsubmit="return confirm('Delete this comment?');">
                                     <input type="hidden" name="action" value="delete_comment">
                                     <input type="hidden" name="comment_id" value="<?php echo $comment['comment_id']; ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-eye-slash me-1"></i>Hide
+                                    </button>
                                 </form>
                             <?php endif; ?>
                         </td>
