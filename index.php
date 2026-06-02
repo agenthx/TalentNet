@@ -13,23 +13,40 @@ $catResult = $conn->query("SELECT category_id, category_name FROM dbProj_job_cat
 $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 
-<div class="row">
-    <div class="col-12 text-center py-5">
-        <h1 class="display-4">Find Your Dream Job</h1>
-        <p class="lead">Search through top companies and exclusive opportunities.</p>
-        
-        <div class="card shadow-sm mt-4 text-start">
-            <div class="card-body bg-light">
+<section class="page-hero mb-4">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <div class="hero-kicker"><i class="bi bi-search"></i> Job portal search</div>
+            <h1 class="display-5 mb-3">Find the right role faster.</h1>
+            <p class="lead mb-0">Search published opportunities by keyword, employer, date, popularity, and category.</p>
+        </div>
+        <div class="col-lg-4 mt-4 mt-lg-0">
+            <div class="soft-panel p-3 text-dark">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="stat-icon"><i class="bi bi-shield-check"></i></span>
+                    <div>
+                        <div class="fw-bold">Verified project data</div>
+                        <div class="small text-muted">Full-text search, prepared filters, ratings, and views.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="search-panel mb-5">
+    <div class="card">
+        <div class="card-body p-4">
                 <form method="GET" action="index.php">
                     <div class="row g-3">
 
                         <div class="col-md-12">
-                            <label class="form-label fw-bold">Keyword (Job Title or Description)</label>
+                            <label class="form-label">Keyword</label>
                             <input type="text" name="search_keyword" class="form-control" placeholder="e.g. Developer, Designer..." value="<?= isset($_GET['search_keyword']) ? htmlspecialchars($_GET['search_keyword']) : '' ?>">
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label fw-bold">Employer</label>
+                            <label class="form-label">Employer</label>
                             <select name="search_employer" class="form-select">
                                 <option value="">All Employers</option>
                                 <?php foreach ($employers as $emp): ?>
@@ -41,12 +58,12 @@ $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
                         </div>
 
                         <div class="col-md-3">
-                            <label class="form-label fw-bold">Posted After</label>
+                            <label class="form-label">Posted After</label>
                             <input type="date" name="search_date_from" class="form-control" value="<?= isset($_GET['search_date_from']) ? htmlspecialchars($_GET['search_date_from']) : '' ?>">
                         </div>
 
                         <div class="col-md-3">
-                            <label class="form-label fw-bold">Sort By</label>
+                            <label class="form-label">Sort By</label>
                             <select name="sort_by" class="form-select">
                                 <option value="newest" <?= (isset($_GET['sort_by']) && $_GET['sort_by'] == 'newest') ? 'selected' : '' ?>>Newest First</option>
                                 <option value="popularity" <?= (isset($_GET['sort_by']) && $_GET['sort_by'] == 'popularity') ? 'selected' : '' ?>>Most Popular</option>
@@ -54,7 +71,7 @@ $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
                         </div>
                         
                         <div class="col-md-3">
-                            <label class="form-label fw-bold">Category</label>
+                            <label class="form-label">Category</label>
                             <select name="search_category" class="form-select">
                                 <option value="">All Categories</option>
                                 <?php foreach ($formCategories as $c): ?>
@@ -66,21 +83,25 @@ $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
                         </div>
                         
                         <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">Search</button>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-search me-1"></i>Search
+                            </button>
                         </div>
 
                     </div>
                 </form>
-            </div>
         </div>
+    </div>
+</section>
+
+<div class="d-flex align-items-end justify-content-between flex-wrap gap-2 mb-3">
+    <div>
+        <h2 class="h4 fw-bold mb-1">Latest Jobs</h2>
+        <p class="text-muted mb-0">Newest matching listings appear first unless popularity sorting is selected.</p>
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-12 mb-3">
-        <h3>Latest Jobs</h3>
-    </div>
-
+<div class="row g-4">
 <?php
     // --- PAGINATION & SEARCH SETUP ---
     $limit = 10;
@@ -172,23 +193,30 @@ $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
     if ($jobs): 
         foreach ($jobs as $job): 
     ?>
-            <div class="col-md-6 mb-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title text-primary"><?= htmlspecialchars($job['title']) ?></h5>
-                        <h6 class="card-subtitle mb-2 text-muted">
-                            <span class="badge bg-secondary"><?= htmlspecialchars($job['employment_type']) ?></span>
-                            <?= htmlspecialchars($job['location']) ?>
-                        </h6>
-                        <p class="card-text mt-3">
+            <div class="col-md-6">
+                <div class="card job-card h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                            <span class="badge text-bg-light border"><?= htmlspecialchars($job['employment_type']) ?></span>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar3 me-1"></i><?= date('M d, Y', strtotime($job['published_at'])) ?>
+                            </small>
+                        </div>
+                        <h3 class="h5 card-title mb-3"><?= htmlspecialchars($job['title']) ?></h3>
+                        <div class="job-meta mb-3">
+                            <span><i class="bi bi-geo-alt me-1"></i><?= htmlspecialchars($job['location']) ?></span>
+                            <?php if (!empty($job['work_mode'])): ?>
+                                <span><i class="bi bi-laptop me-1"></i><?= htmlspecialchars($job['work_mode']) ?></span>
+                            <?php endif; ?>
+                        </div>
+                        <p class="card-text text-muted mb-0">
                             <?= htmlspecialchars($job['short_description']) ?>
                         </p>
                     </div>
-                    <div class="card-footer bg-white border-top-0">
-                        <a href="job_details.php?id=<?= $job['job_id'] ?>" class="btn btn-outline-primary btn-sm">View More</a>
-                        <small class="text-muted float-end mt-1">
-                            Posted: <?= date('M d, Y', strtotime($job['published_at'])) ?>
-                        </small>
+                    <div class="card-footer bg-white d-flex align-items-center justify-content-between p-4 pt-0 border-0">
+                        <a href="job_details.php?id=<?= $job['job_id'] ?>" class="btn btn-outline-primary btn-sm">
+                            View More <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -197,11 +225,15 @@ $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
     else: 
     ?>
         <div class="col-12">
-            <div class="alert alert-info">No jobs found. Check back later!</div>
+            <div class="empty-state text-center p-5">
+                <i class="bi bi-search display-6 d-block mb-3"></i>
+                <h3 class="h5">No jobs found</h3>
+                <p class="mb-0">Try another keyword, category, or date filter.</p>
+            </div>
         </div>
     <?php endif; ?>
     <?php if ($totalPages > 1): ?>
-        <nav aria-label="Job listings pagination" class="mt-5">
+        <nav aria-label="Job listings pagination" class="col-12 mt-4">
             <ul class="pagination justify-content-center">
                 
                 <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">

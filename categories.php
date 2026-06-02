@@ -13,32 +13,32 @@ $result = $conn->query($sql);
 $categories = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 
-<div class="row mt-4 mb-3">
-    <div class="col-12 text-center">
-        <h2 class="text-primary fw-bold">Job Categories</h2>
-        <p class="lead text-muted">Browse opportunities by your area of expertise.</p>
-    </div>
-</div>
+<section class="section-hero text-center mb-4">
+    <div class="hero-kicker"><i class="bi bi-grid"></i> Browse by category</div>
+    <h1 class="h2 mb-2">Job Categories</h1>
+    <p class="lead mb-0">Browse opportunities by your area of expertise.</p>
+</section>
 
-<div class="row">
+<div class="row g-4">
     <?php if ($categories): ?>
         <?php foreach ($categories as $cat): ?>
-            <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow-sm border-0 bg-light">
+            <div class="col-md-4">
+                <div class="card category-card h-100">
                     <div class="card-body text-center p-4">
-                        <h4 class="card-title fw-bold text-dark mt-2 mb-3">
+                        <span class="category-icon mb-3"><i class="bi bi-folder2-open"></i></span>
+                        <h2 class="h5 fw-bold mb-3">
                             <?= htmlspecialchars($cat['category_name']) ?>
-                        </h4>
+                        </h2>
                         <p class="card-text text-muted mb-4">
                             <?= htmlspecialchars($cat['category_description']) ?>
                         </p>
-                        <span class="badge bg-primary rounded-pill px-3 py-2 fs-6">
-                            <?= $cat['job_count'] ?> Active Jobs
+                        <span class="badge text-bg-light border px-3 py-2">
+                            <i class="bi bi-briefcase me-1"></i><?= $cat['job_count'] ?> Active Jobs
                         </span>
                     </div>
-                    <div class="card-footer bg-light border-0 text-center pb-4">
-                        <a href="index.php?search_category=<?= $cat['category_id'] ?>" class="btn btn-outline-primary w-75">
-                            Browse Jobs
+                    <div class="card-footer bg-white border-0 text-center p-4 pt-0">
+                        <a href="index.php?search_category=<?= $cat['category_id'] ?>" class="btn btn-outline-primary w-100">
+                            Browse Jobs <i class="bi bi-arrow-right ms-1"></i>
                         </a>
                     </div>
                 </div>
@@ -46,7 +46,11 @@ $categories = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
         <?php endforeach; ?>
     <?php else: ?>
         <div class="col-12">
-            <div class="alert alert-warning text-center">No categories found.</div>
+            <div class="empty-state text-center p-5">
+                <i class="bi bi-folder-x display-6 d-block mb-3"></i>
+                <h2 class="h5">No categories found</h2>
+                <p class="mb-0">Categories will appear here after they are added.</p>
+            </div>
         </div>
     <?php endif; ?>
 </div>

@@ -94,20 +94,28 @@ try {
 include 'header.php';
 ?>
 
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">Admin Reports</h1>
-    <a href="admin_dashboard.php" class="btn btn-sm btn-outline-secondary">Back to Dashboard</a>
-</div>
+<section class="section-hero mb-4">
+    <div class="d-flex justify-content-between flex-wrap align-items-center gap-3">
+        <div>
+            <div class="hero-kicker"><i class="bi bi-bar-chart-line"></i> Reports</div>
+            <h1 class="h2 mb-2">Admin Reports</h1>
+            <p class="lead mb-0">Review popularity by date range and listings by employer.</p>
+        </div>
+        <a href="admin_dashboard.php" class="btn btn-light">
+            <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+        </a>
+    </div>
+</section>
 
 <?php if (isset($error_msg)): ?>
     <div class="alert alert-danger"><?php echo htmlspecialchars($error_msg); ?></div>
 <?php endif; ?>
 
-<div class="card mb-4 shadow-sm">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">Most Popular Jobs</h5>
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <h2 class="h5 mb-0"><i class="bi bi-star-fill text-warning me-2"></i>Most Popular Jobs</h2>
     </div>
-    <div class="card-body">
+    <div class="card-body p-4">
         <form method="GET" class="row g-3 mb-4">
             <div class="col-md-4">
                 <label for="start_date" class="form-label">Start Date</label>
@@ -118,11 +126,13 @@ include 'header.php';
                 <input type="date" class="form-control" id="end_date" name="end_date" value="<?php echo htmlspecialchars($end_date); ?>">
             </div>
             <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">Generate Report</button>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>Generate Report
+                </button>
             </div>
         </form>
 
-        <div class="table-responsive">
+        <div class="table-responsive table-card">
             <table class="table table-sm table-hover">
                 <thead>
                     <tr>
@@ -135,14 +145,14 @@ include 'header.php';
                 </thead>
                 <tbody>
                     <?php if (empty($popular_jobs)): ?>
-                        <tr><td colspan="5" class="text-center text-muted">No data found</td></tr>
+                        <tr><td colspan="5" class="text-center text-muted py-4">No data found</td></tr>
                     <?php else: ?>
                         <?php foreach ($popular_jobs as $job): ?>
                         <tr>
                             <td><strong><?php echo htmlspecialchars($job['title']); ?></strong></td>
                             <td><?php echo htmlspecialchars($job['company_name']); ?></td>
                             <td>
-                                <span class="text-warning">★</span> 
+                                <span class="text-warning"><i class="bi bi-star-fill"></i></span> 
                                 <?php echo number_format($job['average_rating'] ?? 0, 1); ?>
                             </td>
                             <td><?php echo $job['rating_count']; ?></td>
@@ -156,11 +166,11 @@ include 'header.php';
     </div>
 </div>
 
-<div class="card shadow-sm">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">Jobs by Employer</h5>
+<div class="card">
+    <div class="card-header bg-white">
+        <h2 class="h5 mb-0"><i class="bi bi-building me-2 text-primary"></i>Jobs by Employer</h2>
     </div>
-    <div class="card-body">
+    <div class="card-body p-4">
         <form method="GET" class="row g-3 mb-4">
             <div class="col-md-8">
                 <label for="employer_id" class="form-label">Select Employer</label>
@@ -174,11 +184,13 @@ include 'header.php';
                 </select>
             </div>
             <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">Filter Jobs</button>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>Filter Jobs
+                </button>
             </div>
         </form>
 
-        <div class="table-responsive">
+        <div class="table-responsive table-card">
             <table class="table table-sm table-hover">
                 <thead>
                     <tr>
@@ -191,9 +203,9 @@ include 'header.php';
                 </thead>
                 <tbody>
                     <?php if ($employer_id == 0): ?>
-                        <tr><td colspan="5" class="text-center text-muted">Please select an employer above.</td></tr>
+                        <tr><td colspan="5" class="text-center text-muted py-4">Please select an employer above.</td></tr>
                     <?php elseif (empty($employer_jobs)): ?>
-                        <tr><td colspan="5" class="text-center text-muted">This employer hasn't posted any jobs yet.</td></tr>
+                        <tr><td colspan="5" class="text-center text-muted py-4">This employer hasn't posted any jobs yet.</td></tr>
                     <?php else: ?>
                         <?php foreach ($employer_jobs as $job): ?>
                         <tr>

@@ -79,6 +79,22 @@ try {
         $comments_query->close();
     }
 } catch (Exception $e) {}
+
+$job_type = $job['employment_type'] ?? $job['type'] ?? 'Full-time';
+$salary_label = $job['salary'] ?? 'Competitive';
+if (!empty($job['salary_min']) || !empty($job['salary_max'])) {
+    $currency = $job['currency'] ?? '';
+    $salary_min = !empty($job['salary_min']) ? number_format((float)$job['salary_min'], 0) : null;
+    $salary_max = !empty($job['salary_max']) ? number_format((float)$job['salary_max'], 0) : null;
+    if ($salary_min && $salary_max) {
+        $salary_label = trim($currency . ' ' . $salary_min . ' - ' . $salary_max);
+    } elseif ($salary_min) {
+        $salary_label = trim($currency . ' ' . $salary_min . '+');
+    } elseif ($salary_max) {
+        $salary_label = trim('Up to ' . $currency . ' ' . $salary_max);
+    }
+}
+$posted_label = !empty($job['published_at']) ? date('M d, Y', strtotime($job['published_at'])) : 'Just now';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -87,67 +103,78 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($job['title']) ?> | Job Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="assets/css/app.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <style>
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', system-ui, sans-serif; }
-        .star-item { font-size: 1.8rem; transition: transform 0.1s ease; display: inline-block; }
-        .star-item:hover { transform: scale(1.2); }
-        .comments-scroll { max-height: 320px; overflow-y: auto; scrollbar-width: thin; }
-    </style>
 </head>
-<body>
+<body class="job-detail-page">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-light site-navbar sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-bold text-primary" href="index.php">💼 JobPortal</a>
+        <a class="navbar-brand d-flex align-items-center" href="index.php">
+            <span class="brand-mark"><i class="bi bi-briefcase-fill"></i></span>
+            TalentNet
+        </a>
         <div class="navbar-nav ms-auto">
             <?php if ($is_logged_in): ?>
-                <span class="nav-link text-light me-3">Welcome Back!</span>
-                <a class="btn btn-outline-danger btn-sm my-auto" href="logout.php">Logout</a>
+                <span class="nav-link me-3"><i class="bi bi-person-circle me-1"></i>Welcome Back</span>
+                <a class="btn btn-outline-danger btn-sm my-auto" href="logout.php">
+                    <i class="bi bi-box-arrow-right me-1"></i>Logout
+                </a>
             <?php else: ?>
-                <a class="btn btn-primary btn-sm my-auto" href="login.php">Account Login</a>
+                <a class="btn btn-primary btn-sm my-auto" href="login.php">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Account Login
+                </a>
             <?php endif; ?>
         </div>
     </div>
 </nav>
 
 <div class="container my-4">
-    <a href="index.php" class="text-decoration-none text-muted small d-inline-block mb-3">← Back to Job Openings Feed</a>
+    <a href="index.php" class="text-decoration-none small d-inline-flex align-items-center gap-1 mb-3">
+        <i class="bi bi-arrow-left"></i>Back to Job Openings Feed
+    </a>
     
     <div class="row g-4">
         
         <div class="col-lg-8">
             
-            <div class="card shadow-sm border-0 p-4 mb-4 rounded-3 bg-white">
-                <span class="badge bg-primary align-self-start mb-2 px-3 py-2 rounded-pill"><?= htmlspecialchars($job['type'] ?? 'Full-time') ?></span>
-                <h2 class="fw-bold text-dark mb-1"><?= htmlspecialchars($job['title']) ?></h2>
-                <h5 class="text-secondary mb-3"><?= htmlspecialchars($job['company_name'] ?? 'Unknown Company') ?></h5>
+            <div class="detail-card p-4 mb-4">
+                <span class="badge text-bg-light border mb-3 px-3 py-2"><?= htmlspecialchars($job_type) ?></span>
+                <h1 class="h2 fw-bold mb-2"><?= htmlspecialchars($job['title']) ?></h1>
+                <h2 class="h5 text-muted mb-4"><?= htmlspecialchars($job['company_name'] ?? 'Unknown Company') ?></h2>
                 
-                <div class="d-flex text-muted small gap-4 border-top pt-3">
-                    <div>📍 <strong>Location:</strong> <?= htmlspecialchars($job['location'] ?? 'Not Specified') ?></div>
-                    <div>💰 <strong>Compensation:</strong> <?= htmlspecialchars($job['salary'] ?? 'Competitive') ?></div>
+                <div class="detail-meta">
+                    <div class="detail-meta-item">
+                        <div class="small text-muted">Location</div>
+                        <div class="fw-bold"><i class="bi bi-geo-alt me-1"></i><?= htmlspecialchars($job['location'] ?? 'Not Specified') ?></div>
+                    </div>
+                    <div class="detail-meta-item">
+                        <div class="small text-muted">Compensation</div>
+                        <div class="fw-bold"><i class="bi bi-cash-coin me-1"></i><?= htmlspecialchars($salary_label) ?></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="card shadow-sm border-0 p-4 mb-4 rounded-3 bg-white">
-                <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Job Overview & Operations</h5>
+            <div class="detail-card p-4 mb-4">
+                <h2 class="h5 fw-bold border-bottom pb-2 mb-3">Job Overview & Operations</h2>
                 <p class="text-secondary lh-lg small"><?= nl2br(htmlspecialchars($job['description'] ?? 'No description provided.')) ?></p>
                 
                 <?php if (!empty($job['requirements'])): ?>
-                    <h5 class="fw-bold text-dark border-bottom pb-2 mt-4 mb-3">Candidate Requirements</h5>
+                    <h2 class="h5 fw-bold border-bottom pb-2 mt-4 mb-3">Candidate Requirements</h2>
                     <p class="text-secondary lh-lg small"><?= nl2br(htmlspecialchars($job['requirements'])) ?></p>
                 <?php endif; ?>
             </div>
 
-            <div class="card shadow-sm border-0 mb-4 rounded-3 overflow-hidden">
-                <div class="card-header bg-dark text-white font-weight-bold py-3">
-                    ✨ Ratings & Feedback Hub 
+            <div class="detail-card mb-4 overflow-hidden">
+                <div class="card-header bg-white fw-bold py-3">
+                    <i class="bi bi-chat-square-heart text-primary me-2"></i>Ratings & Feedback Hub
                 </div>
                 <div class="card-body p-4 bg-white">
                     
-                    <div class="rating-section mb-4 text-center p-3 bg-light rounded-3 border">
+                    <div class="rating-section mb-4 text-center p-3 soft-panel">
                         <h6 class="fw-bold text-dark mb-1">Rate this Job Listing</h6>
-                        <div class="star-rating text-warning my-2" style="cursor: pointer;">
+                        <div class="star-rating my-2">
                             <?php 
                             $rounded_avg = round($avg_rating);
                             for ($i = 1; $i <= 5; $i++) {
@@ -170,13 +197,13 @@ try {
                     <h6 class="fw-bold text-dark mb-3">Community Thread (<span id="comment-count"><?= count($comments) ?></span>)</h6>
                     <div id="comments-container" class="comments-scroll mb-4 pe-1">
                         <?php if (empty($comments)): ?>
-                            <p id="no-comments" class="text-muted italic text-center py-4 my-2 border rounded border-dashed bg-light small">No comments posted yet. Be the first to start the conversation!</p>
+                            <p id="no-comments" class="empty-state text-center py-4 my-2 small">No comments posted yet. Be the first to start the conversation!</p>
                         <?php else: ?>
                             <?php foreach ($comments as $com): ?>
-                                <div class="p-3 border rounded bg-light mb-2 shadow-sm">
-                                    <div class="d-flex justify-content-between font-weight-bold small text-primary mb-1">
+                                <div class="p-3 border rounded bg-light mb-2">
+                                    <div class="d-flex justify-content-between fw-bold small text-primary mb-1">
                                         <span>@<?= htmlspecialchars($com['full_name']) ?></span>
-                                        <span class="text-muted font-weight-normal small"><?= date('M d, Y', strtotime($com['created_at'])) ?></span>
+                                        <span class="text-muted fw-normal small"><?= date('M d, Y', strtotime($com['created_at'])) ?></span>
                                     </div>
                                     <p class="mb-0 small text-secondary lh-base"><?= htmlspecialchars($com['comment_text']) ?></p>
                                 </div>
@@ -187,9 +214,11 @@ try {
                     <?php if ($is_logged_in): ?>
                         <form id="ajax-comment-form" class="mt-2">
                             <input type="hidden" id="job_id" value="<?= $job_id ?>">
-                            <div class="input-group shadow-sm">
+                            <div class="input-group">
                                 <input type="text" id="comment_text" class="form-control py-2 small" placeholder="Write a constructive feedback comment..." required autocomplete="off">
-                                <button class="btn btn-primary px-4 fw-bold" type="submit" id="submitCommentBtn">Post Comment</button>
+                                <button class="btn btn-primary px-4" type="submit" id="submitCommentBtn">
+                                    <i class="bi bi-send me-1"></i>Post
+                                </button>
                             </div>
                         </form>
                     <?php else: ?>
@@ -203,26 +232,33 @@ try {
             </div>
 
         <div class="col-lg-4">
-            <div class="card shadow-sm border-0 p-4 sticky-top rounded-3 bg-white" style="top: 24px; z-index: 10;">
-                <h5 class="fw-bold text-dark mb-3">Application Summary</h5>
+            <div class="detail-card p-4 sticky-top job-summary-card">
+                <h2 class="h5 fw-bold mb-3">Application Summary</h2>
                 
                 <ul class="list-unstyled mb-4 small text-secondary">
-                    <li class="mb-2"> <strong>Employer:</strong> <?= htmlspecialchars($job['company_name'] ?? 'Unknown Company') ?></li>
-                    <li class="mb-2"> <strong>Location:</strong> <?= htmlspecialchars($job['location'] ?? 'Not Specified') ?></li>
-                    <li class="mb-2"> <strong>Job Nature:</strong> <?= htmlspecialchars($job['type'] ?? 'Full-time / Direct Hire') ?></li>
-                    <li class="mb-1"> <strong>Posted:</strong> Just now</li>
+                    <li class="mb-2"><i class="bi bi-building me-2 text-primary"></i><strong>Employer:</strong> <?= htmlspecialchars($job['company_name'] ?? 'Unknown Company') ?></li>
+                    <li class="mb-2"><i class="bi bi-geo-alt me-2 text-primary"></i><strong>Location:</strong> <?= htmlspecialchars($job['location'] ?? 'Not Specified') ?></li>
+                    <li class="mb-2"><i class="bi bi-clock me-2 text-primary"></i><strong>Job Nature:</strong> <?= htmlspecialchars($job_type) ?></li>
+                    <li class="mb-1"><i class="bi bi-calendar3 me-2 text-primary"></i><strong>Posted:</strong> <?= htmlspecialchars($posted_label) ?></li>
                 </ul>
                 
-                <button class="btn btn-success w-100 py-2.5 fw-bold rounded-3 shadow-sm mb-2" onclick="alert('Application submitted successfully via Milestone 3 pipeline hook!')">Apply For Position</button>
-                <button class="btn btn-outline-secondary w-100 py-2 small rounded-3">Bookmark Job Posting</button>
+                <button class="btn btn-success w-100 py-2 mb-2" onclick="alert('Application submitted successfully via Milestone 3 pipeline hook!')">
+                    <i class="bi bi-send-check me-1"></i>Apply For Position
+                </button>
+                <button class="btn btn-outline-secondary w-100 py-2 small">
+                    <i class="bi bi-bookmark me-1"></i>Bookmark Job Posting
+                </button>
             </div>
         </div>
 
     </div>
 </div>
 
-<footer class="bg-dark text-muted text-center py-3 mt-5 border-top border-secondary">
-    <small class="small">&copy; 2026 Academic Web Application Database Project. All Rights Reserved.</small>
+<footer class="site-footer text-center py-4 mt-5">
+    <div class="container">
+        <p class="mb-1 fw-semibold">TalentNet Job Portal</p>
+        <p class="mb-0 small">&copy; 2026 IT8415 Job Portal Group Project. All rights reserved.</p>
+    </div>
 </footer>
 
 <script>

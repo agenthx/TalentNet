@@ -91,53 +91,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include 'header.php';
 ?>
 
-<div class="row justify-content-center">
-    <div class="col-md-5">
-        <div class="card shadow">
-            <div class="card-header bg-dark text-white text-center">
-                <h4 class="mb-0">Welcome Back</h4>
-            </div>
-            <div class="card-body p-4">
-                
-                <?php if ($expired_msg): ?>
-                    <div class="alert alert-warning">
-                        <i class="bi bi-clock-history me-1"></i>
-                        <?php echo htmlspecialchars($expired_msg); ?>
-                    </div>
-                <?php endif; ?>
-
-                <?php if ($success_msg): ?>
-                    <div class="alert alert-success"><?php echo htmlspecialchars($success_msg); ?></div>
-                <?php endif; ?>
-
-                <?php if (!empty($errors)): ?>
-                    <div class="alert alert-danger">
-                        <?php foreach ($errors as $error): ?>
-                            <div><?php echo htmlspecialchars($error); ?></div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-
-                <form method="POST" action="login.php">
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" 
-                               value="<?php echo htmlspecialchars($email); ?>" required autofocus>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" class="form-control" id="password" name="password" required>
-                    </div>
-
-                    <div class="d-grid gap-2 mt-4">
-                        <button type="submit" class="btn btn-dark btn-lg">Login</button>
-                    </div>
+<div class="auth-shell">
+    <div class="row justify-content-center">
+        <div class="col-md-7 col-lg-5">
+            <div class="card auth-card">
+                <div class="card-header text-center">
+                    <span class="category-icon bg-white text-primary mb-3"><i class="bi bi-person-check"></i></span>
+                    <h1 class="h4 mb-1">Welcome Back</h1>
+                    <p class="mb-0 small opacity-75">Sign in to manage your account and job activity.</p>
+                </div>
+                <div class="card-body p-4">
                     
-                    <div class="mt-3 text-center">
-                        <p>Don't have an account? <a href="register.php">Register here</a></p>
-                    </div>
-                </form>
+                    <?php if ($expired_msg): ?>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-clock-history me-1"></i>
+                            <?php echo htmlspecialchars($expired_msg); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($success_msg): ?>
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle me-1"></i>
+                            <?php echo htmlspecialchars($success_msg); ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($errors)): ?>
+                        <div class="alert alert-danger">
+                            <?php foreach ($errors as $error): ?>
+                                <div><?php echo htmlspecialchars($error); ?></div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <form method="POST" action="login.php">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email Address</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="<?php echo htmlspecialchars($email); ?>" required autofocus>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right me-1"></i>Login
+                            </button>
+                        </div>
+                        
+                        <div class="auth-note mt-3 text-center p-3">
+                            <p class="mb-0">Don't have an account? <a href="register.php" class="fw-bold">Register here</a></p>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
