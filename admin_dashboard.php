@@ -34,6 +34,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $message = "User status updated successfully.";
             }
         }
+
+        if ($action === 'change_user_role' && isset($_POST['user_id'], $_POST['role_id'])) {
+            $uid = (int)$_POST['user_id'];
+            $new_role_id = (int)$_POST['role_id'];
+
+            if ($uid == $_SESSION['user_id']) {
+                $message = "You cannot change your own administrator role.";
+                $message_type = 'danger';
+            } else {
+                $roleStmt = $conn->prepare("SELECT role_name FROM dbProj_roles WHERE role_id = ? LIMIT 1");
+                if (!$roleStmt) throw new Exception("Database prepare error: " . $conn->error);
+
+                $roleStmt->bind_param("i", $new_role_id);
+                $roleStmt->execute();
+                $roleResult = $roleStmt->get_result();
+                $role = $roleResult->fetch_assoc();
+                $roleStmt->close();
+
+                if (!$role) {
+                    $message = "Invalid role selected.";
+                    $message_type = 'danger';
+                } else {
+                    $stmt = $conn->prepare("UPDATE dbProj_users SET role_id = ? WHERE user_id = ?");
+                    if (!$stmt) throw new Exception("Database prepare error: " . $conn->error);
+
+                    $stmt->bind_param("ii", $new_role_id, $uid);
+                    $stmt->execute();
+                    $message = "User role changed to " . ucfirst($role['role_name']) . ".";
+                }
+            }
+        }
         
         if ($action === 'remove_job' && isset($_POST['job_id'])) {
             $jid = (int)$_POST['job_id'];
@@ -70,6 +101,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
 // Fetch Data for the Dashboard
 try {
+    // Roles
+    $roleResult = $conn->query("
+        SELECT role_id, role_name
+        FROM dbProj_roles
+        ORDER BY role_id ASC
+    ");
+    if (!$roleResult) throw new Exception($conn->error);
+    $roles = $roleResult->fetch_all(MYSQLI_ASSOC);
+
     // Users
     $userResult = $conn->query("
         SELECT u.*, r.role_name 
@@ -286,7 +326,22 @@ include 'header.php';
                     <tr>
                         <td><?php echo htmlspecialchars($user['full_name']); ?></td>
                         <td><?php echo htmlspecialchars($user['email']); ?></td>
-                        <td><span class="badge bg-info text-dark"><?php echo ucfirst($user['role_name']); ?></span></td>
+                        <td>
+                            <form method="POST" class="admin-inline-form">
+                                <input type="hidden" name="action" value="change_user_role">
+                                <input type="hidden" name="user_id" value="<?php echo $user['user_id']; ?>">
+                                <select name="role_id" class="form-select form-select-sm admin-role-select" <?php echo $user['user_id'] == $_SESSION['user_id'] ? 'disabled' : ''; ?>>
+                                    <?php foreach ($roles as $role): ?>
+                                        <option value="<?php echo $role['role_id']; ?>" <?php echo (int)$user['role_id'] === (int)$role['role_id'] ? 'selected' : ''; ?>>
+                                            <?php echo ucfirst(htmlspecialchars($role['role_name'])); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-outline-primary" <?php echo $user['user_id'] == $_SESSION['user_id'] ? 'disabled' : ''; ?>>
+                                    <i class="bi bi-shuffle me-1"></i>Save
+                                </button>
+                            </form>
+                        </td>
                         <td>
                             <?php if ($user['is_active']): ?>
                                 <span class="badge bg-success">Active</span>

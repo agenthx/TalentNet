@@ -53,37 +53,23 @@ try {
     $employers = $empResult->fetch_all(MYSQLI_ASSOC);
 
     if ($employer_id > 0) {
-        // Find the owner user ID for the employer
-        $stmt = $conn->prepare("SELECT owner_user_id FROM dbProj_employers WHERE employer_id = ?");
+        // Report 2 must be filtered by the selected employer, not only by creator user.
+        $stmt = $conn->prepare("CALL dbProj_get_jobs_by_employer(?)");
         if (!$stmt) throw new Exception("Database prepare error: " . $conn->error);
         
         $stmt->bind_param("i", $employer_id);
         $stmt->execute();
-        $ownerResult = $stmt->get_result();
-        $ownerRow = $ownerResult->fetch_assoc();
+
+        $jobsResult = $stmt->get_result();
+        if ($jobsResult) {
+            $employer_jobs = $jobsResult->fetch_all(MYSQLI_ASSOC);
+        }
         $stmt->close();
-        
-        $owner_id = $ownerRow ? $ownerRow['owner_user_id'] : null;
-        
-        if ($owner_id) {
-            // Call the stored procedure for jobs by the creator
-            $stmt = $conn->prepare("CALL dbProj_get_jobs_by_creator(?)");
-            if (!$stmt) throw new Exception("Database prepare error: " . $conn->error);
-            
-            $stmt->bind_param("i", $owner_id);
-            $stmt->execute();
-            
-            $jobsResult = $stmt->get_result();
-            if ($jobsResult) {
-                $employer_jobs = $jobsResult->fetch_all(MYSQLI_ASSOC);
-            }
-            $stmt->close();
-            
-            // CRITICAL FIX FOR MYSQLI: Flush remaining results from the Stored Procedure
-            while ($conn->more_results() && $conn->next_result()) {
-                if ($extraResult = $conn->store_result()) {
-                    $extraResult->free();
-                }
+
+        // CRITICAL FIX FOR MYSQLI: Flush remaining results from the Stored Procedure
+        while ($conn->more_results() && $conn->next_result()) {
+            if ($extraResult = $conn->store_result()) {
+                $extraResult->free();
             }
         }
     }

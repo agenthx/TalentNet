@@ -4,6 +4,18 @@ require_once 'db.php';
 
 header('Content-Type: application/json');
 
+if (isset($_SESSION['user_id'])) {
+    $timeout = 1800;
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $timeout)) {
+        session_unset();
+        session_destroy();
+        echo json_encode(['status' => 'error', 'message' => 'Your session expired. Please log in again.']);
+        exit;
+    }
+
+    $_SESSION['last_activity'] = time();
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Invalid request method.']);
     exit;
@@ -23,6 +35,17 @@ if ($action === 'submit_rating') {
     $rating = min(5, max(1, intval($_POST['rating'])));
 
     try {
+        $job_stmt = $conn->prepare("SELECT job_id FROM dbProj_job_listings WHERE job_id = ? AND status = 'published' LIMIT 1");
+        if (!$job_stmt) throw new Exception("Database error");
+
+        $job_stmt->bind_param("i", $job_id);
+        $job_stmt->execute();
+        $job_result = $job_stmt->get_result();
+        if (!$job_result->fetch_assoc()) {
+            echo json_encode(['status' => 'error', 'message' => 'This job listing is not available for rating.']);
+            exit;
+        }
+
         // Check if the user already rated this job
         $check_stmt = $conn->prepare("SELECT rating_id FROM dbProj_ratings WHERE job_id = ? AND user_id = ?");
         if (!$check_stmt) throw new Exception("Database error");
@@ -74,7 +97,23 @@ if ($action === 'submit_comment') {
         exit;
     }
 
+    if (strlen($comment_text) > 1000) {
+        echo json_encode(['status' => 'error', 'message' => 'Comment must be 1000 characters or fewer.']);
+        exit;
+    }
+
     try {
+        $job_stmt = $conn->prepare("SELECT job_id FROM dbProj_job_listings WHERE job_id = ? AND status = 'published' LIMIT 1");
+        if (!$job_stmt) throw new Exception("Database error");
+
+        $job_stmt->bind_param("i", $job_id);
+        $job_stmt->execute();
+        $job_result = $job_stmt->get_result();
+        if (!$job_result->fetch_assoc()) {
+            echo json_encode(['status' => 'error', 'message' => 'This job listing is not available for comments.']);
+            exit;
+        }
+
         // Insert the new comment
         $stmt = $conn->prepare("INSERT INTO dbProj_comments (job_id, user_id, comment_text, created_at) VALUES (?, ?, ?, NOW())");
         if (!$stmt) throw new Exception("Database error");
@@ -93,8 +132,8 @@ if ($action === 'submit_comment') {
 
         echo json_encode([
             'status' => 'success',
-            'username' => htmlspecialchars($user['full_name']),
-            'comment' => htmlspecialchars($comment_text),
+            'username' => $user['full_name'],
+            'comment' => $comment_text,
             'date' => 'Just now'
         ]);
     } catch (Exception $e) {

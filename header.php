@@ -3,6 +3,18 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+if (isset($_SESSION['user_id'])) {
+    $timeout = 1800;
+    if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $timeout)) {
+        session_unset();
+        session_destroy();
+        header("Location: login.php?expired=1");
+        exit;
+    }
+
+    $_SESSION['last_activity'] = time();
+}
+
 $currentPage = basename($_SERVER['PHP_SELF']);
 
 function jp_nav_active($page, $currentPage) {
