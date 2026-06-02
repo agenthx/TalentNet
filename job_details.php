@@ -114,6 +114,35 @@ $pageScripts = '';
 if ($job) {
     $pageScripts = <<<'HTML'
 <script>
+// Helper function to trigger our HTML alert instead of the browser popup
+function showHtmlAlert(message, type) {
+    const alertBox = $('#dynamic-alert');
+    // Strip out old color classes and apply the new one
+    alertBox.removeClass('alert-success alert-danger alert-warning alert-info d-none').addClass('alert-' + type);
+    $('#dynamic-alert-msg').text(message);
+    
+    // Auto-hide after 3.5 seconds
+    setTimeout(() => {
+        alertBox.addClass('d-none');
+    }, 3500);
+}
+
+// UI Toggle for the Bookmark button
+function toggleBookmark(btn) {
+    let $icon = $(btn).find('i');
+    let $text = $(btn).find('.btn-text');
+    
+    if ($icon.hasClass('bi-bookmark')) {
+        $icon.removeClass('bi-bookmark').addClass('bi-bookmark-fill');
+        $text.text('Job Bookmarked');
+        showHtmlAlert('Job saved to your local session bookmarks!', 'success');
+    } else {
+        $icon.removeClass('bi-bookmark-fill').addClass('bi-bookmark');
+        $text.text('Bookmark Job');
+        showHtmlAlert('Job removed from your bookmarks.', 'info');
+    }
+}
+
 $(document).ready(function() {
     const detailData = $('#job-detail-data');
     const jobId = Number(detailData.data('job-id'));
@@ -132,6 +161,7 @@ $(document).ready(function() {
         });
     }
 
+    // Star hover effects utilizing Bootstrap Icons
     $('.star-item').on('mouseover', function() {
         const index = Number($(this).data('value'));
         $('.star-item').each(function() {
@@ -167,8 +197,9 @@ $(document).ready(function() {
                     $('.star-item').each(function() {
                         $(this).html(Number($(this).data('value')) <= currentSavedAvg ? '&#9733;' : '&#9734;');
                     });
+                    showHtmlAlert('Thank you! Your rating has been recorded.', 'success');
                 } else {
-                    alert(response.message);
+                    showHtmlAlert(response.message, 'danger');
                 }
             },
             error: function() {
@@ -212,7 +243,7 @@ $(document).ready(function() {
                     const countSpan = $('#comment-count');
                     countSpan.text(Number(countSpan.text()) + 1);
                 } else {
-                    alert(response.message);
+                    showHtmlAlert(response.message, 'danger');
                 }
             },
             error: function() {
