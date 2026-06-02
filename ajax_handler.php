@@ -31,8 +31,13 @@ if (!$user_id) {
 
 // Ratings Handler
 if ($action === 'submit_rating') {
-    $job_id = intval($_POST['job_id']);
-    $rating = min(5, max(1, intval($_POST['rating'])));
+    $job_id = intval($_POST['job_id'] ?? 0);
+    $rating = min(5, max(1, intval($_POST['rating'] ?? 0)));
+
+    if ($job_id < 1) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid job listing.']);
+        exit;
+    }
 
     try {
         $job_stmt = $conn->prepare("SELECT job_id FROM dbProj_job_listings WHERE job_id = ? AND status = 'published' LIMIT 1");
@@ -89,8 +94,13 @@ if ($action === 'submit_rating') {
 
 // Comments Handler
 if ($action === 'submit_comment') {
-    $job_id = intval($_POST['job_id']);
-    $comment_text = trim($_POST['comment_text']);
+    $job_id = intval($_POST['job_id'] ?? 0);
+    $comment_text = trim($_POST['comment_text'] ?? '');
+
+    if ($job_id < 1) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid job listing.']);
+        exit;
+    }
 
     if (empty($comment_text)) {
         echo json_encode(['status' => 'error', 'message' => 'Comment cannot be empty.']);
@@ -141,3 +151,5 @@ if ($action === 'submit_comment') {
     }
     exit;
 }
+
+echo json_encode(['status' => 'error', 'message' => 'Unknown AJAX action.']);

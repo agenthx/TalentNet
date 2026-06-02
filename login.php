@@ -3,9 +3,6 @@
  * This file verifies the user email and password, then starts a secure session, 
  * and also implemented session expiry for security reasons
  */
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 session_start();
 
 // Already logged in

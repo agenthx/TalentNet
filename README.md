@@ -14,7 +14,7 @@ TalentNet is a PHP, MySQL, and Apache job portal for the IT8415 Database Program
 - M1 Database: prefixed `dbProj_` tables, seed data, FULLTEXT search index, stored procedures, and database security grants.
 - M2 Auth and Admin: registration, login, session expiry, role-based access, user activation/deactivation, role changes, job removal, comment hiding, and two admin reports.
 - M3 Home and Search: category navigation, newest-first feed, job cards with media/logo area, pagination, FULLTEXT keyword search, employer-name search, date-range search, category filter, and popularity sorting.
-- M4 Interactive content: AJAX/jQuery star ratings and asynchronous comments are present on job details.
+- M4 Employer/content features: creators can manage employer profiles, upload company logos, create/edit/publish/close their own listings, upload job cover images, and use AJAX/jQuery star ratings plus asynchronous comments on job details.
 
 ## Database Initialization
 
@@ -35,6 +35,8 @@ The application code uses MySQLi prepared statements for user-controlled input. 
 - `dbProj_app_viewer` for browsing, comments, ratings, and views.
 - `dbProj_app_creator` for employer/job/media management.
 - `dbProj_app_admin` for administration, moderation, and reporting.
+
+Uploaded images are validated through `upload_helper.php` and saved with randomized file names. The `uploads/.htaccess` file blocks PHP/script execution from upload folders on Apache.
 
 ## Demo Accounts
 
@@ -81,11 +83,15 @@ ajax_handler.php
 auth_helper.php
 categories.php
 db.php.template.php
+employer_panel.php
 footer.php
 header.php
 index.php
 job_details.php
 login.php
 logout.php
+post_job.php
 register.php
+upload_helper.php
+uploads/.htaccess
 ```

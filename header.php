@@ -16,6 +16,8 @@ if (isset($_SESSION['user_id'])) {
 }
 
 $currentPage = basename($_SERVER['PHP_SELF']);
+$sessionRole = $_SESSION['user_role'] ?? '';
+$sessionUserName = $_SESSION['user_name'] ?? '';
 
 function jp_nav_active($page, $currentPage) {
     return $currentPage === $page ? ' active' : '';
@@ -57,7 +59,12 @@ function jp_nav_active($page, $currentPage) {
             <i class="bi bi-grid me-1"></i>Categories
           </a>
         </li>
-        <?php if ($_SESSION['user_role'] === 'creator'): ?>
+        <?php if ($sessionRole === 'creator'): ?>
+            <li class="nav-item">
+              <a class="nav-link<?php echo jp_nav_active('employer_panel.php', $currentPage); ?>" href="employer_panel.php">
+                <i class="bi bi-card-list me-1"></i>Employer Panel
+              </a>
+            </li>
             <li class="nav-item">
               <a class="nav-link<?php echo jp_nav_active('post_job.php', $currentPage); ?>" href="post_job.php">
                 <i class="bi bi-plus-circle me-1"></i>Post a Job
@@ -65,7 +72,7 @@ function jp_nav_active($page, $currentPage) {
             </li>
           <?php endif; ?>
 
-        <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
+        <?php if ($sessionRole === 'admin'): ?>
             <li class="nav-item">
               <a class="nav-link<?php echo in_array($currentPage, ['admin_dashboard.php', 'admin_reports.php']) ? ' active' : ''; ?>" href="admin_dashboard.php">
                 <i class="bi bi-speedometer2 me-1"></i>Admin Dashboard
@@ -79,14 +86,14 @@ function jp_nav_active($page, $currentPage) {
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               <i class="bi bi-person-circle me-1"></i>
-              <?php echo htmlspecialchars($_SESSION['user_name']); ?> 
-              <span class="badge text-bg-light border"><?php echo ucfirst(htmlspecialchars($_SESSION['user_role'])); ?></span>
+              <?php echo htmlspecialchars($sessionUserName); ?>
+              <span class="badge text-bg-light border"><?php echo ucfirst(htmlspecialchars($sessionRole)); ?></span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-              <?php if ($_SESSION['user_role'] === 'admin'): ?>
+              <?php if ($sessionRole === 'admin'): ?>
                 <li><a class="dropdown-item" href="admin_dashboard.php"><i class="bi bi-sliders me-2"></i>Admin Panel</a></li>
                 <li><hr class="dropdown-divider"></li>
-              <?php elseif ($_SESSION['user_role'] === 'creator'): ?>
+              <?php elseif ($sessionRole === 'creator'): ?>
                 <li><a class="dropdown-item" href="employer_panel.php"><i class="bi bi-card-list me-2"></i>My Listings</a></li>
                 <li><hr class="dropdown-divider"></li>
               <?php endif; ?>

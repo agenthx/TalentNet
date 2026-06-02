@@ -2,7 +2,10 @@
 // Establish the database connection
 require_once 'db.php';
 
-// Fetch Categories for the dropdown
+function jp_valid_date($value) {
+    return is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value);
+}
+
 $catResult = $conn->query("SELECT category_id, category_name FROM dbProj_job_categories ORDER BY category_name ASC");
 $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
 
@@ -173,7 +176,7 @@ require_once 'header.php';
                 <div class="row g-3">
                     <div class="col-md-5">
                         <label class="form-label" for="search_keyword">Job Title Keyword</label>
-                        <input type="text" id="search_keyword" name="search_keyword" class="form-control" placeholder="e.g. Developer, Designer..." value="<?= htmlspecialchars($keyword) ?>">
+                        <input type="text" id="search_keyword" name="search_keyword" class="form-control" placeholder="e.g. Developer, Designer" value="<?php echo htmlspecialchars($keyword); ?>">
                     </div>
 
                     <div class="col-md-4">
@@ -193,8 +196,8 @@ require_once 'header.php';
                         <select id="search_category" name="search_category" class="form-select">
                             <option value="">All Categories</option>
                             <?php foreach ($formCategories as $category): ?>
-                                <option value="<?= $category['category_id'] ?>" <?= $categoryId === (int)$category['category_id'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($category['category_name']) ?>
+                                <option value="<?php echo (int)$category['category_id']; ?>" <?php echo $categoryId === (int)$category['category_id'] ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($category['category_name']); ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -240,31 +243,49 @@ require_once 'header.php';
 </div>
 
 <div class="row g-4">
-    <?php if (!empty($jobs)): ?>
+    <?php if ($jobs): ?>
         <?php foreach ($jobs as $job): ?>
+            <?php
+            $imagePath = $job['primary_image_path'] ?: '';
+            $imageAlt = $job['primary_image_alt'] ?: $job['title'];
+            $logoPath = $job['logo_path'] ?: '';
+            ?>
             <div class="col-md-6">
-                <div class="card job-card h-100">
-                    <img src="<?= htmlspecialchars($job['primary_image_path'] ?? 'https://placehold.co/600x400/eef6f5/0f766e?text=Job+Portal') ?>" class="card-img-top border-bottom" style="height: 220px; object-fit: cover;" alt="Job Image" onerror="this.src='https://placehold.co/600x400/eef6f5/0f766e?text=Job+Portal';">
-                    
+                <article class="card job-card h-100">
+                    <div class="job-card-media">
+                        <?php if ($imagePath): ?>
+                            <img src="<?php echo htmlspecialchars($imagePath); ?>" alt="<?php echo htmlspecialchars($imageAlt); ?>" onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+                        <?php endif; ?>
+                        <div class="job-card-image-fallback <?php echo $imagePath ? 'd-none' : ''; ?>">
+                            <i class="bi bi-briefcase"></i>
+                        </div>
+                        <div class="job-card-logo">
+                            <?php if ($logoPath): ?>
+                                <img src="<?php echo htmlspecialchars($logoPath); ?>" alt="<?php echo htmlspecialchars($job['company_name']); ?> logo" onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+                                <span class="job-card-logo-fallback d-none"><i class="bi bi-building"></i></span>
+                            <?php else: ?>
+                                <span class="job-card-logo-fallback"><i class="bi bi-building"></i></span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-                            <span class="badge text-bg-light border"><?= htmlspecialchars($job['employment_type']) ?></span>
+                            <span class="badge text-bg-light border"><?php echo htmlspecialchars($job['employment_type']); ?></span>
                             <small class="text-muted">
-                                <i class="bi bi-calendar3 me-1"></i><?= date('M d, Y', strtotime($job['published_at'])) ?>
+                                <i class="bi bi-calendar3 me-1"></i><?php echo date('M d, Y', strtotime($job['published_at'])); ?>
                             </small>
                         </div>
-                        <h3 class="h5 card-title mb-2"><?= htmlspecialchars($job['title']) ?></h3>
+                        <h3 class="h5 card-title mb-2"><?php echo htmlspecialchars($job['title']); ?></h3>
                         <p class="fw-semibold text-muted small mb-3">
                             <i class="bi bi-building me-1"></i><?= htmlspecialchars($job['company_name']) ?>
                         </p>
                         
                         <div class="job-meta mb-3">
-                            <span><i class="bi bi-geo-alt me-1"></i><?= htmlspecialchars($job['location']) ?></span>
-                            <?php if (!empty($job['work_mode'])): ?>
-                                <span><i class="bi bi-laptop me-1"></i><?= htmlspecialchars($job['work_mode']) ?></span>
-                            <?php endif; ?>
-                            <span><i class="bi bi-eye me-1"></i><?= (int)$job['view_count'] ?> views</span>
-                            <span><i class="bi bi-star-fill text-warning me-1"></i><?= number_format((float)$job['average_rating'], 1) ?></span>
+                            <span><i class="bi bi-geo-alt me-1"></i><?php echo htmlspecialchars($job['location']); ?></span>
+                            <span><i class="bi bi-laptop me-1"></i><?php echo htmlspecialchars($job['work_mode']); ?></span>
+                            <span><i class="bi bi-eye me-1"></i><?php echo (int)$job['view_count']; ?> views</span>
+                            <span><i class="bi bi-star-fill text-warning me-1"></i><?php echo number_format((float)$job['average_rating'], 1); ?></span>
                         </div>
                         
                         <p class="card-text text-muted mb-0">
@@ -273,11 +294,11 @@ require_once 'header.php';
                     </div>
                     
                     <div class="card-footer bg-white d-flex align-items-center justify-content-between p-4 pt-0 border-0">
-                        <a href="job_details.php?id=<?= $job['job_id'] ?>" class="btn btn-outline-primary btn-sm">
+                        <a href="job_details.php?id=<?php echo (int)$job['job_id']; ?>" class="btn btn-outline-primary btn-sm">
                             View More <i class="bi bi-arrow-right ms-1"></i>
                         </a>
                     </div>
-                </div>
+                </article>
             </div>
         <?php endforeach; ?>
     <?php else: ?>

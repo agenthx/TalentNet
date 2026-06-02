@@ -116,6 +116,10 @@ include 'header.php';
                         </div>
                     <?php endif; ?>
 
+                    <div id="client-password-error" class="alert alert-danger d-none" role="alert">
+                        Passwords do not match.
+                    </div>
+
                     <form id="registrationForm" method="POST" action="register.php" novalidate>
                         <div class="mb-3">
                             <label for="full_name" class="form-label">Full Name</label>
@@ -185,9 +189,16 @@ document.getElementById('registrationForm').addEventListener('submit', function(
     const password = document.getElementById('password').value;
     const confirm = document.getElementById('confirm_password').value;
     
+    const passwordError = document.getElementById('client-password-error');
+    const confirmInput = document.getElementById('confirm_password');
+
     if (password !== confirm) {
-        alert("Passwords do not match!");
+        confirmInput.setCustomValidity('Passwords do not match.');
+        passwordError.classList.remove('d-none');
         isValid = false;
+    } else {
+        confirmInput.setCustomValidity('');
+        passwordError.classList.add('d-none');
     }
     
     if (!form.checkValidity()) {

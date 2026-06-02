@@ -38,8 +38,16 @@ function require_role($allowed_roles) {
     $allowed_roles = (array)$allowed_roles;
 
     if (!in_array($user_role, $allowed_roles)) {
-        // User doesn't have permission
-        die("Access Denied: You do not have the required permissions to view this page");
+        http_response_code(403);
+        include 'header.php';
+        echo "<div class='empty-state text-center p-5 my-4'>
+                <i class='bi bi-shield-lock display-6 d-block mb-3'></i>
+                <h1 class='h4'>Access Denied</h1>
+                <p class='mb-4'>You do not have permission to view this page.</p>
+                <a class='btn btn-primary' href='index.php'>Return to Home</a>
+              </div>";
+        include 'footer.php';
+        exit;
     }
 }
 
