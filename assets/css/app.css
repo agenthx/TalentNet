@@ -267,6 +267,23 @@ a:hover {
   font-size: 1.25rem;
 }
 
+.employer-logo-preview {
+  width: 4.5rem;
+  height: 4.5rem;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--jp-border);
+  border-radius: 8px;
+  background: var(--jp-surface-soft);
+}
+
+.employer-logo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .job-meta {
   display: flex;
   flex-wrap: wrap;
@@ -400,6 +417,17 @@ a:hover {
   max-width: 8.5rem;
 }
 
+.listing-status-form {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.listing-status-form .form-select {
+  min-height: 2rem;
+  width: 7.6rem;
+}
+
 .nav-tabs {
   border-bottom: 1px solid var(--jp-border);
 }
@@ -509,5 +537,13 @@ a:hover {
 
   .detail-meta {
     grid-template-columns: 1fr;
+  }
+
+  .listing-status-form {
+    width: 100%;
+  }
+
+  .listing-status-form .form-select {
+    flex: 1 1 auto;
   }
 }

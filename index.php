@@ -5,7 +5,6 @@ function jp_valid_date($value) {
     return is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value);
 }
 
-// Fetch categories for the navigation-style category filter.
 $catResult = $conn->query("SELECT category_id, category_name FROM dbProj_job_categories ORDER BY category_name ASC");
 $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
 
@@ -174,7 +173,7 @@ require_once 'header.php';
                 <div class="row g-3">
                     <div class="col-md-5">
                         <label class="form-label" for="search_keyword">Job Title Keyword</label>
-                        <input type="text" id="search_keyword" name="search_keyword" class="form-control" placeholder="e.g. Developer, Designer..." value="<?php echo htmlspecialchars($keyword); ?>">
+                        <input type="text" id="search_keyword" name="search_keyword" class="form-control" placeholder="e.g. Developer, Designer" value="<?php echo htmlspecialchars($keyword); ?>">
                     </div>
 
                     <div class="col-md-4">
@@ -187,7 +186,7 @@ require_once 'header.php';
                         <select id="search_category" name="search_category" class="form-select">
                             <option value="">All Categories</option>
                             <?php foreach ($formCategories as $category): ?>
-                                <option value="<?php echo $category['category_id']; ?>" <?php echo $categoryId === (int)$category['category_id'] ? 'selected' : ''; ?>>
+                                <option value="<?php echo (int)$category['category_id']; ?>" <?php echo $categoryId === (int)$category['category_id'] ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($category['category_name']); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -234,113 +233,28 @@ require_once 'header.php';
 </div>
 
 <div class="row g-4">
-<?php
-    // --- PAGINATION & SEARCH SETUP ---
-    $limit = 10;
-    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-    if ($page < 1) $page = 1;
-    $offset = ($page - 1) * $limit;
-
-    // 1. The Base Queries
-// Use a subquery to pull the primary image from the media table
-    $sql = "SELECT *, (SELECT file_path FROM dbProj_job_media WHERE job_id = dbProj_job_listings.job_id AND media_type = 'image' LIMIT 1) as image_path FROM dbProj_job_listings WHERE status = 'published'";
-    $countSql = "SELECT COUNT(*) as total FROM dbProj_job_listings WHERE status = 'published'";
-
-    // Arrays to hold dynamic MySQLi filters
-    $conditions = [];
-    $params = [];
-    $types = ""; // String to hold data types (s = string, i = integer)
-
-// 2. Keyword Search (FULLTEXT Index in Boolean Mode)
-    if (!empty($_GET['search_keyword'])) {
-        $conditions[] = "MATCH(title, description) AGAINST(? IN BOOLEAN MODE)";
-        // Append an asterisk so "dev*" matches "developer", "developing", etc.
-        $params[] = $_GET['search_keyword'] . '*'; 
-        $types .= "s";
-    }
-    // 3. Employer Search
-    if (!empty($_GET['search_employer'])) {
-        $conditions[] = "employer_id = ?";
-        $params[] = (int)$_GET['search_employer'];
-        $types .= "i";
-    }
-
-    // Category Search (Catches the button click from categories.php)
-    if (!empty($_GET['search_category'])) {
-        $conditions[] = "category_id = ?";
-        $params[] = (int)$_GET['search_category'];
-        $types .= "i";
-    }
-    
-    // 4. Date Search (Posted After)
-    if (!empty($_GET['search_date_from'])) {
-        $conditions[] = "published_at >= ?";
-        $params[] = $_GET['search_date_from'] . ' 00:00:00';
-        $types .= "s";
-    }
-
-    // 5. Append all conditions to the SQL strings
-    if (count($conditions) > 0) {
-        $whereClause = " AND " . implode(" AND ", $conditions);
-        $sql .= $whereClause;
-        $countSql .= $whereClause;
-    }
-
-    // 6. Sorting Logic (Newest vs Popularity)
-    $sortBy = $_GET['sort_by'] ?? 'newest';
-    if ($sortBy === 'popularity') {
-        $sql .= " ORDER BY (SELECT COUNT(*) FROM dbProj_job_views WHERE job_id = dbProj_job_listings.job_id) DESC";
-    } else {
-        $sql .= " ORDER BY published_at DESC";
-    }
-
-    // Add final limits for pagination
-    $sql .= " LIMIT ? OFFSET ?";
-
-    // --- EXECUTE THE COUNT (For accurate page numbers) ---
-    $countStmt = $conn->prepare($countSql);
-    if (!empty($params)) {
-        // Use the splat operator (...) to unpack the dynamic parameters array
-        $countStmt->bind_param($types, ...$params);
-    }
-    $countStmt->execute();
-    $countResult = $countStmt->get_result();
-    $totalJobs = $countResult->fetch_assoc()['total'];
-    $totalPages = ceil($totalJobs / $limit);
-
-    // --- EXECUTE THE MAIN SEARCH ---
-    // We need a separate array for the main query because it includes the LIMIT and OFFSET integers
-    $mainParams = $params;
-    $mainParams[] = $limit;
-    $mainParams[] = $offset;
-    $mainTypes = $types . "ii"; // Add two integers for limit and offset
-
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param($mainTypes, ...$mainParams);
-    $stmt->execute();
-    
-    $jobsResult = $stmt->get_result();
-    $jobs = $jobsResult ? $jobsResult->fetch_all(MYSQLI_ASSOC) : [];
-    
-    // Loop through the array to generate Bootstrap cards
-    if ($jobs): 
-        foreach ($jobs as $job): 
-    ?>
+    <?php if ($jobs): ?>
+        <?php foreach ($jobs as $job): ?>
+            <?php
+            $imagePath = $job['primary_image_path'] ?: '';
+            $imageAlt = $job['primary_image_alt'] ?: $job['title'];
+            $logoPath = $job['logo_path'] ?: '';
+            ?>
             <div class="col-md-6">
-                <div class="card job-card h-100">
-                    <img src="<?= htmlspecialchars($job['image_path'] ?? 'https://placehold.co/600x400/eef6f5/0f766e?text=Job+Portal') ?>" class="card-img-top border-bottom" style="height: 220px; object-fit: cover;" alt="Job Image">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-                            <span class="badge text-bg-light border"><?= htmlspecialchars($job['employment_type']) ?></span>
-                            <small class="text-muted">
-                                <i class="bi bi-calendar3 me-1"></i><?= date('M d, Y', strtotime($job['published_at'])) ?>
-                            </small>
+                <article class="card job-card h-100">
+                    <div class="job-card-media">
+                        <?php if ($imagePath): ?>
+                            <img src="<?php echo htmlspecialchars($imagePath); ?>" alt="<?php echo htmlspecialchars($imageAlt); ?>" onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+                        <?php endif; ?>
+                        <div class="job-card-image-fallback <?php echo $imagePath ? 'd-none' : ''; ?>">
+                            <i class="bi bi-briefcase"></i>
                         </div>
-                        <h3 class="h5 card-title mb-3"><?= htmlspecialchars($job['title']) ?></h3>
-                        <div class="job-meta mb-3">
-                            <span><i class="bi bi-geo-alt me-1"></i><?= htmlspecialchars($job['location']) ?></span>
-                            <?php if (!empty($job['work_mode'])): ?>
-                                <span><i class="bi bi-laptop me-1"></i><?= htmlspecialchars($job['work_mode']) ?></span>
+                        <div class="job-card-logo">
+                            <?php if ($logoPath): ?>
+                                <img src="<?php echo htmlspecialchars($logoPath); ?>" alt="<?php echo htmlspecialchars($job['company_name']); ?> logo" onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+                                <span class="job-card-logo-fallback d-none"><i class="bi bi-building"></i></span>
+                            <?php else: ?>
+                                <span class="job-card-logo-fallback"><i class="bi bi-building"></i></span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -358,9 +272,7 @@ require_once 'header.php';
                         </p>
                         <div class="job-meta mb-3">
                             <span><i class="bi bi-geo-alt me-1"></i><?php echo htmlspecialchars($job['location']); ?></span>
-                            <?php if (!empty($job['work_mode'])): ?>
-                                <span><i class="bi bi-laptop me-1"></i><?php echo htmlspecialchars($job['work_mode']); ?></span>
-                            <?php endif; ?>
+                            <span><i class="bi bi-laptop me-1"></i><?php echo htmlspecialchars($job['work_mode']); ?></span>
                             <span><i class="bi bi-eye me-1"></i><?php echo (int)$job['view_count']; ?> views</span>
                             <span><i class="bi bi-star-fill text-warning me-1"></i><?php echo number_format((float)$job['average_rating'], 1); ?></span>
                         </div>
@@ -369,11 +281,11 @@ require_once 'header.php';
                         </p>
                     </div>
                     <div class="card-footer bg-white d-flex align-items-center justify-content-between p-4 pt-0 border-0">
-                        <a href="job_details.php?id=<?php echo $job['job_id']; ?>" class="btn btn-outline-primary btn-sm">
+                        <a href="job_details.php?id=<?php echo (int)$job['job_id']; ?>" class="btn btn-outline-primary btn-sm">
                             View More <i class="bi bi-arrow-right ms-1"></i>
                         </a>
                     </div>
-                </div>
+                </article>
             </div>
         <?php endforeach; ?>
     <?php else: ?>

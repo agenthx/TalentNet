@@ -43,14 +43,27 @@ try {
 
 
 $employer_id = (int)($_GET['employer_id'] ?? 0);
+$creator_user_id = (int)($_GET['creator_user_id'] ?? 0);
 $employer_jobs = [];
 $employers = [];
+$creator_jobs = [];
+$creators = [];
 
 try {
     // List employers for the dropdown
     $empResult = $conn->query("SELECT employer_id, company_name FROM dbProj_employers ORDER BY company_name ASC");
     if (!$empResult) throw new Exception($conn->error);
     $employers = $empResult->fetch_all(MYSQLI_ASSOC);
+
+    $creatorResult = $conn->query("
+        SELECT u.user_id, u.full_name
+        FROM dbProj_users u
+        INNER JOIN dbProj_roles r ON r.role_id = u.role_id
+        WHERE r.role_name = 'creator'
+        ORDER BY u.full_name ASC
+    ");
+    if (!$creatorResult) throw new Exception($conn->error);
+    $creators = $creatorResult->fetch_all(MYSQLI_ASSOC);
 
     if ($employer_id > 0) {
         // Report 2 must be filtered by the selected employer, not only by creator user.
@@ -63,6 +76,27 @@ try {
         $jobsResult = $stmt->get_result();
         if ($jobsResult) {
             $employer_jobs = $jobsResult->fetch_all(MYSQLI_ASSOC);
+        }
+        $stmt->close();
+
+        // CRITICAL FIX FOR MYSQLI: Flush remaining results from the Stored Procedure
+        while ($conn->more_results() && $conn->next_result()) {
+            if ($extraResult = $conn->store_result()) {
+                $extraResult->free();
+            }
+        }
+    }
+
+    if ($creator_user_id > 0) {
+        $stmt = $conn->prepare("CALL dbProj_get_jobs_by_creator(?)");
+        if (!$stmt) throw new Exception("Database prepare error: " . $conn->error);
+
+        $stmt->bind_param("i", $creator_user_id);
+        $stmt->execute();
+
+        $creatorJobsResult = $stmt->get_result();
+        if ($creatorJobsResult) {
+            $creator_jobs = $creatorJobsResult->fetch_all(MYSQLI_ASSOC);
         }
         $stmt->close();
 
@@ -152,7 +186,7 @@ include 'header.php';
     </div>
 </div>
 
-<div class="card">
+<div class="card mb-4">
     <div class="card-header bg-white">
         <h2 class="h5 mb-0"><i class="bi bi-building me-2 text-primary"></i>Jobs by Employer</h2>
     </div>
@@ -196,6 +230,69 @@ include 'header.php';
                         <?php foreach ($employer_jobs as $job): ?>
                         <tr>
                             <td><strong><?php echo htmlspecialchars($job['title']); ?></strong></td>
+                            <td><?php echo htmlspecialchars($job['category_name']); ?></td>
+                            <td>
+                                <span class="badge <?php echo $job['status'] === 'published' ? 'bg-success' : 'bg-secondary'; ?>">
+                                    <?php echo ucfirst($job['status']); ?>
+                                </span>
+                            </td>
+                            <td><?php echo number_format($job['average_rating'] ?? 0, 1); ?></td>
+                            <td><?php echo $job['comment_count']; ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-white">
+        <h2 class="h5 mb-0"><i class="bi bi-person-workspace me-2 text-primary"></i>Jobs by Creator</h2>
+    </div>
+    <div class="card-body p-4">
+        <form method="GET" class="row g-3 mb-4">
+            <div class="col-md-8">
+                <label for="creator_user_id" class="form-label">Select Creator</label>
+                <select class="form-select" id="creator_user_id" name="creator_user_id">
+                    <option value="0">-- Choose a Creator --</option>
+                    <?php foreach ($creators as $creator): ?>
+                        <option value="<?php echo $creator['user_id']; ?>" <?php echo $creator_user_id == $creator['user_id'] ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($creator['full_name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-1"></i>Filter Creator
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive table-card">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Job Title</th>
+                        <th>Employer</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Avg Rating</th>
+                        <th>Comments</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if ($creator_user_id == 0): ?>
+                        <tr><td colspan="6" class="text-center text-muted py-4">Please select a creator above.</td></tr>
+                    <?php elseif (empty($creator_jobs)): ?>
+                        <tr><td colspan="6" class="text-center text-muted py-4">This creator hasn't posted any jobs yet.</td></tr>
+                    <?php else: ?>
+                        <?php foreach ($creator_jobs as $job): ?>
+                        <tr>
+                            <td><strong><?php echo htmlspecialchars($job['title']); ?></strong></td>
+                            <td><?php echo htmlspecialchars($job['company_name']); ?></td>
                             <td><?php echo htmlspecialchars($job['category_name']); ?></td>
                             <td>
                                 <span class="badge <?php echo $job['status'] === 'published' ? 'bg-success' : 'bg-secondary'; ?>">
