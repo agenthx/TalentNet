@@ -27,22 +27,8 @@ BEGIN
     e.company_name,
     j.location,
     j.work_mode,
-    ROUND(AVG(
-      CASE
-        WHEN (p_start_date IS NULL OR DATE(r.created_at) >= p_start_date)
-          AND (p_end_date IS NULL OR DATE(r.created_at) <= p_end_date)
-        THEN r.rating_value
-        ELSE NULL
-      END
-    ), 2) AS average_rating,
-    COUNT(DISTINCT
-      CASE
-        WHEN (p_start_date IS NULL OR DATE(r.created_at) >= p_start_date)
-          AND (p_end_date IS NULL OR DATE(r.created_at) <= p_end_date)
-        THEN r.rating_id
-        ELSE NULL
-      END
-    ) AS rating_count,
+    ROUND(AVG(r.rating_value), 2) AS average_rating,
+    COUNT(DISTINCT r.rating_id) AS rating_count,
     COUNT(DISTINCT
       CASE
         WHEN (p_start_date IS NULL OR DATE(v.viewed_at) >= p_start_date)
@@ -67,8 +53,8 @@ BEGIN
     j.location,
     j.work_mode,
     j.published_at
-  HAVING rating_count > 0
-  ORDER BY average_rating DESC, rating_count DESC, view_count DESC, j.published_at DESC
+  HAVING view_count > 0
+  ORDER BY view_count DESC, average_rating DESC, rating_count DESC, j.published_at DESC
   LIMIT v_limit_rows;
 END$$
 
@@ -93,6 +79,39 @@ BEGIN
   LEFT JOIN dbProj_ratings r ON r.job_id = j.job_id
   LEFT JOIN dbProj_comments cm ON cm.job_id = j.job_id AND cm.is_removed = FALSE
   WHERE j.created_by_user_id = p_creator_user_id
+  GROUP BY
+    j.job_id,
+    j.title,
+    j.status,
+    c.category_name,
+    e.company_name,
+    j.published_at
+  ORDER BY j.created_at DESC;
+END$$
+
+DROP PROCEDURE IF EXISTS dbProj_get_jobs_by_employer$$
+CREATE PROCEDURE dbProj_get_jobs_by_employer (
+  IN p_employer_id INT UNSIGNED
+)
+BEGIN
+  SELECT
+    j.job_id,
+    j.title,
+    j.status,
+    c.category_name,
+    e.company_name,
+    j.published_at,
+    ROUND(AVG(r.rating_value), 2) AS average_rating,
+    COUNT(DISTINCT r.rating_id) AS rating_count,
+    COUNT(DISTINCT cm.comment_id) AS comment_count,
+    COUNT(DISTINCT v.view_id) AS view_count
+  FROM dbProj_job_listings j
+  INNER JOIN dbProj_job_categories c ON c.category_id = j.category_id
+  INNER JOIN dbProj_employers e ON e.employer_id = j.employer_id
+  LEFT JOIN dbProj_ratings r ON r.job_id = j.job_id
+  LEFT JOIN dbProj_comments cm ON cm.job_id = j.job_id AND cm.is_removed = FALSE
+  LEFT JOIN dbProj_job_views v ON v.job_id = j.job_id
+  WHERE j.employer_id = p_employer_id
   GROUP BY
     j.job_id,
     j.title,
