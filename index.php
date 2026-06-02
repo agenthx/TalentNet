@@ -118,7 +118,8 @@ $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
     $offset = ($page - 1) * $limit;
 
     // 1. The Base Queries
-    $sql = "SELECT * FROM dbProj_job_listings WHERE status = 'published'";
+// Use a subquery to pull the primary image from the media table
+    $sql = "SELECT *, (SELECT file_path FROM dbProj_job_media WHERE job_id = dbProj_job_listings.job_id AND media_type = 'image' LIMIT 1) as image_path FROM dbProj_job_listings WHERE status = 'published'";
     $countSql = "SELECT COUNT(*) as total FROM dbProj_job_listings WHERE status = 'published'";
 
     // Arrays to hold dynamic MySQLi filters
@@ -203,6 +204,7 @@ $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
     ?>
             <div class="col-md-6">
                 <div class="card job-card h-100">
+                    <img src="<?= htmlspecialchars($job['image_path'] ?? 'https://placehold.co/600x400/eef6f5/0f766e?text=Job+Portal') ?>" class="card-img-top border-bottom" style="height: 220px; object-fit: cover;" alt="Job Image">
                     <div class="card-body p-4">
                         <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
                             <span class="badge text-bg-light border"><?= htmlspecialchars($job['employment_type']) ?></span>

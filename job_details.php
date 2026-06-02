@@ -78,6 +78,26 @@ try {
     }
 } catch (Exception $e) {}
 
+// Fetch Media (Image and optional Video)
+$job_image = 'https://placehold.co/800x400/eef6f5/0f766e?text=Job+Opportunity'; // Fallback
+$job_video = null;
+try {
+    $media_query = $conn->prepare("SELECT media_type, file_path FROM dbProj_job_media WHERE job_id = ?");
+    if ($media_query) {
+        $media_query->bind_param("i", $job_id);
+        $media_query->execute();
+        $media_res = $media_query->get_result();
+        while ($row = $media_res->fetch_assoc()) {
+            if ($row['media_type'] === 'image' && strpos($job_image, 'placehold') !== false) {
+                $job_image = $row['file_path'];
+            } elseif ($row['media_type'] === 'video') {
+                $job_video = $row['file_path'];
+            }
+        }
+        $media_query->close();
+    }
+} catch (Exception $e) {}
+
 $job_type = $job['employment_type'] ?? $job['type'] ?? 'Full-time';
 $salary_label = $job['salary'] ?? 'Competitive';
 if (!empty($job['salary_min']) || !empty($job['salary_max'])) {
@@ -109,6 +129,9 @@ $posted_label = !empty($job['published_at']) ? date('M d, Y', strtotime($job['pu
     <div class="row g-4">
         
         <div class="col-lg-8">
+            <div class="detail-card mb-4 overflow-hidden shadow-sm">
+                <img src="<?= htmlspecialchars($job_image) ?>" class="w-100" style="max-height: 400px; object-fit: cover;" alt="Job Cover Image">
+            </div>
             <div class="detail-card p-4 mb-4">
                 <span class="badge text-bg-light border mb-3 px-3 py-2"><?= htmlspecialchars($job_type) ?></span>
                 <h1 class="h2 fw-bold mb-2"><?= htmlspecialchars($job['title']) ?></h1>
@@ -133,6 +156,13 @@ $posted_label = !empty($job['published_at']) ? date('M d, Y', strtotime($job['pu
                 <?php if (!empty($job['requirements'])): ?>
                     <h2 class="h5 fw-bold border-bottom pb-2 mt-4 mb-3">Candidate Requirements</h2>
                     <p class="text-secondary lh-lg small"><?= nl2br(htmlspecialchars($job['requirements'])) ?></p>
+                <?php endif; ?>
+                    <?php if ($job_video): ?>
+                    <h2 class="h5 fw-bold border-bottom pb-2 mt-4 mb-3">Company Insight Video</h2>
+                    <video controls class="w-100 rounded shadow-sm border" style="max-height: 350px;">
+                        <source src="<?= htmlspecialchars($job_video) ?>" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
                 <?php endif; ?>
             </div>
 

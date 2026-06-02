@@ -45,7 +45,14 @@ function jp_nav_active($page, $currentPage) {
             <i class="bi bi-grid me-1"></i>Categories
           </a>
         </li>
-        
+        <?php if ($_SESSION['user_role'] === 'creator'): ?>
+            <li class="nav-item">
+              <a class="nav-link<?php echo jp_nav_active('post_job.php', $currentPage); ?>" href="post_job.php">
+                <i class="bi bi-plus-circle me-1"></i>Post a Job
+              </a>
+            </li>
+          <?php endif; ?>
+
         <?php if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin'): ?>
             <li class="nav-item">
               <a class="nav-link<?php echo in_array($currentPage, ['admin_dashboard.php', 'admin_reports.php']) ? ' active' : ''; ?>" href="admin_dashboard.php">
@@ -74,15 +81,6 @@ function jp_nav_active($page, $currentPage) {
               <li><a class="dropdown-item text-danger" href="logout.php"><i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
             </ul>
           </li>
-          
-          <?php if ($_SESSION['user_role'] === 'creator'): ?>
-            <li class="nav-item">
-              <a class="btn btn-primary btn-sm ms-lg-2" href="post_job.php">
-                <i class="bi bi-plus-circle me-1"></i>Post a Job
-              </a>
-            </li>
-          <?php endif; ?>
-
         <?php else: ?>
           <li class="nav-item">
             <a class="nav-link<?php echo jp_nav_active('login.php', $currentPage); ?>" href="login.php">

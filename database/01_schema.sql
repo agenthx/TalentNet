@@ -87,6 +87,7 @@ CREATE TABLE dbProj_job_listings (
   title VARCHAR(180) NOT NULL,
   short_description VARCHAR(500) NOT NULL,
   description TEXT NOT NULL,
+  requirements TEXT NULL,
   location VARCHAR(140) NOT NULL,
   employment_type ENUM('Full-time', 'Part-time', 'Contract', 'Internship') NOT NULL,
   work_mode ENUM('On-site', 'Hybrid', 'Remote') NOT NULL,
