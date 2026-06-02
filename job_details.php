@@ -357,10 +357,13 @@ $logo_path    = $job['logo_path'] ?? '';
                     </div>
 
                     <?php if ($is_logged_in): ?>
-                        <form id="ajax-comment-form" class="mt-2">
+                        <form id="ajax-comment-form" class="mt-2"
+                              method="post"
+                              action="job_details.php?id=<?php echo (int)$job_id; ?>">
                             <div class="input-group">
                                 <input type="text"
                                        id="comment_text"
+                                       name="comment_text"
                                        class="form-control py-2 small"
                                        maxlength="1000"
                                        placeholder="Write a constructive feedback comment"
@@ -433,6 +436,18 @@ $logo_path    = $job['logo_path'] ?? '';
     </div><!-- /row -->
 </div><!-- /my-4 -->
 
+<?php
+/*
+ * BUGFIX: This page's script uses jQuery ($(document).ready, $.ajax), but jQuery
+ * is loaded inside footer.php, which is included AFTER this block. Emitting the
+ * script here ran it before jQuery existed ("$ is not defined"), so NONE of the
+ * handlers bound -- including the comment form's submit handler. Without that
+ * handler the form did a native submit, losing ?id= and showing "Listing
+ * unavailable". We buffer the script now and let footer.php print it (via
+ * $pageScripts) AFTER jQuery has loaded.
+ */
+ob_start();
+?>
 <script>
 function showHtmlAlert(message, type) {
     const allowed = ['success', 'danger', 'warning', 'info'];
@@ -547,5 +562,8 @@ $(document).ready(function () {
     });
 });
 </script>
-
-<?php include 'footer.php'; ?>
+<?php
+// Hand the buffered script to footer.php, which echoes $pageScripts AFTER jQuery.
+$pageScripts = ob_get_clean();
+include 'footer.php';
+?>
