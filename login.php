@@ -55,8 +55,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $stmt->get_result();
             $user = $result->fetch_assoc();
 
+            $password_matches = false;
+            if ($user) {
+                $stored_hash = trim((string)$user['password_hash']);
+                $password_matches = password_verify($password, $stored_hash);
+            }
+
             // Verify password and account status
-            if ($user && password_verify($password, $user['password_hash'])) {
+            if ($user && $password_matches) {
                 if ($user['is_active']) {
                     session_regenerate_id(true);
 

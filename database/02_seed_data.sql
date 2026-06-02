@@ -33,15 +33,15 @@ INSERT INTO dbProj_roles (role_id, role_name, role_description) VALUES
 INSERT INTO dbProj_users
   (user_id, role_id, full_name, email, password_hash, phone, is_active)
 VALUES
-  (1, 3, 'Aisha Admin', 'admin@jobportal.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '+96890000001', TRUE),
-  (2, 2, 'Omar Employer', 'omar.creator@jobportal.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '+96890000002', TRUE),
-  (3, 2, 'Lina Hiring', 'lina.creator@jobportal.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '+96890000003', TRUE),
-  (4, 2, 'Farah Recruiter', 'farah.creator@jobportal.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '+96890000004', TRUE),
-  (5, 1, 'Sara Viewer', 'sara.viewer@jobportal.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '+96890000005', TRUE),
-  (6, 1, 'Khalid Viewer', 'khalid.viewer@jobportal.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '+96890000006', TRUE),
-  (7, 1, 'Noor Viewer', 'noor.viewer@jobportal.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '+96890000007', TRUE),
-  (8, 1, 'Youssef Viewer', 'youssef.viewer@jobportal.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '+96890000008', TRUE),
-  (9, 1, 'Mariam Viewer', 'mariam.viewer@jobportal.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '+96890000009', TRUE);
+  (1, 3, 'Aisha Admin', 'admin@jobportal.local', '$2y$10$ftiFdWEOci9KJnCdtOWHUunnSXjEE8CB3lX15SnRHDazwBDPS/Zd.', '+96890000001', TRUE),
+  (2, 2, 'Omar Employer', 'omar.creator@jobportal.local', '$2y$10$ftiFdWEOci9KJnCdtOWHUunnSXjEE8CB3lX15SnRHDazwBDPS/Zd.', '+96890000002', TRUE),
+  (3, 2, 'Lina Hiring', 'lina.creator@jobportal.local', '$2y$10$ftiFdWEOci9KJnCdtOWHUunnSXjEE8CB3lX15SnRHDazwBDPS/Zd.', '+96890000003', TRUE),
+  (4, 2, 'Farah Recruiter', 'farah.creator@jobportal.local', '$2y$10$ftiFdWEOci9KJnCdtOWHUunnSXjEE8CB3lX15SnRHDazwBDPS/Zd.', '+96890000004', TRUE),
+  (5, 1, 'Sara Viewer', 'sara.viewer@jobportal.local', '$2y$10$ftiFdWEOci9KJnCdtOWHUunnSXjEE8CB3lX15SnRHDazwBDPS/Zd.', '+96890000005', TRUE),
+  (6, 1, 'Khalid Viewer', 'khalid.viewer@jobportal.local', '$2y$10$ftiFdWEOci9KJnCdtOWHUunnSXjEE8CB3lX15SnRHDazwBDPS/Zd.', '+96890000006', TRUE),
+  (7, 1, 'Noor Viewer', 'noor.viewer@jobportal.local', '$2y$10$ftiFdWEOci9KJnCdtOWHUunnSXjEE8CB3lX15SnRHDazwBDPS/Zd.', '+96890000007', TRUE),
+  (8, 1, 'Youssef Viewer', 'youssef.viewer@jobportal.local', '$2y$10$ftiFdWEOci9KJnCdtOWHUunnSXjEE8CB3lX15SnRHDazwBDPS/Zd.', '+96890000008', TRUE),
+  (9, 1, 'Mariam Viewer', 'mariam.viewer@jobportal.local', '$2y$10$ftiFdWEOci9KJnCdtOWHUunnSXjEE8CB3lX15SnRHDazwBDPS/Zd.', '+96890000009', TRUE);
 
 INSERT INTO dbProj_job_categories
   (category_id, category_name, category_slug, category_description)
