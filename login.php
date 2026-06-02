@@ -5,12 +5,12 @@
  */
 session_start();
 
-// Already logged in
-if (isset($_SESSION['user_id'])) {
-    $dest = ($_SESSION['user_role'] ?? '') === 'admin' ? 'admin_dashboard.php' : 'index.php';
-    header("Location: $dest");
-    exit;
-}
+//// Already logged in
+//if (isset($_SESSION['user_id'])) {
+//    $dest = ($_SESSION['user_role'] ?? '') === 'admin' ? 'admin_dashboard.php' : 'index.php';
+//    header("Location: $dest");
+//    exit;
+//}
 
 require_once 'db.php';
 
