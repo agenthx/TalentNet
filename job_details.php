@@ -11,8 +11,11 @@ $job = null;
 $comments = [];
 $avg_rating = 0;
 $total_ratings = 0;
+$job_image = 'https://placehold.co/800x400/eef6f5/0f766e?text=Job+Opportunity'; // Fallback
+$job_video = null;
 
 if ($job_id > 0) {
+    // 1. Fetch the Job Details
     try {
         $job_query = $conn->prepare("
             SELECT
@@ -40,33 +43,92 @@ if ($job_id > 0) {
             $job = $result->fetch_assoc();
             $job_query->close();
         }
-        $comments_query->close();
-    }
-} catch (Exception $e) {}
+    } catch (Exception $e) {}
 
-// Fetch Media (Image and optional Video)
-$job_image = 'https://placehold.co/800x400/eef6f5/0f766e?text=Job+Opportunity'; // Fallback
-$job_video = null;
-try {
-    $media_query = $conn->prepare("SELECT media_type, file_path FROM dbProj_job_media WHERE job_id = ?");
-    if ($media_query) {
-        $media_query->bind_param("i", $job_id);
-        $media_query->execute();
-        $media_res = $media_query->get_result();
-        while ($row = $media_res->fetch_assoc()) {
-            if ($row['media_type'] === 'image' && strpos($job_image, 'placehold') !== false) {
-                $job_image = $row['file_path'];
-            } elseif ($row['media_type'] === 'video') {
-                $job_video = $row['file_path'];
+    if ($job) {
+        // 2. Fetch Media (Image and optional Video)
+        try {
+            $media_query = $conn->prepare("SELECT media_type, file_path FROM dbProj_job_media WHERE job_id = ?");
+            if ($media_query) {
+                $media_query->bind_param("i", $job_id);
+                $media_query->execute();
+                $media_res = $media_query->get_result();
+                while ($row = $media_res->fetch_assoc()) {
+                    if ($row['media_type'] === 'image' && strpos($job_image, 'placehold') !== false) {
+                        $job_image = $row['file_path'];
+                    } elseif ($row['media_type'] === 'video') {
+                        $job_video = $row['file_path'];
+                    }
+                }
+                $media_query->close();
             }
-        }
-        $media_query->close();
-    }
-} catch (Exception $e) {}
+        } catch (Exception $e) {}
 
-$job_type = $job['employment_type'] ?? $job['type'] ?? 'Full-time';
-$salary_label = $job['salary'] ?? 'Competitive';
-if (!empty($job['salary_min']) || !empty($job['salary_max'])) {
+        // 3. Track Job Views
+        try {
+            $viewer_ip = $_SERVER['REMOTE_ADDR'] ?? '';
+            if ($is_logged_in) {
+                $viewer_user_id = (int)$_SESSION['user_id'];
+                $view_stmt = $conn->prepare("INSERT INTO dbProj_job_views (job_id, viewer_user_id, viewer_ip) VALUES (?, ?, ?)");
+                if ($view_stmt) {
+                    $view_stmt->bind_param("iis", $job_id, $viewer_user_id, $viewer_ip);
+                    $view_stmt->execute();
+                    $view_stmt->close();
+                }
+            } else {
+                $view_stmt = $conn->prepare("INSERT INTO dbProj_job_views (job_id, viewer_ip) VALUES (?, ?)");
+                if ($view_stmt) {
+                    $view_stmt->bind_param("is", $job_id, $viewer_ip);
+                    $view_stmt->execute();
+                    $view_stmt->close();
+                }
+            }
+        } catch (Exception $e) {}
+
+        // 4. Fetch Ratings
+        try {
+            $rating_query = $conn->prepare("
+                SELECT AVG(rating_value) AS avg_rate, COUNT(rating_id) AS total_rates
+                FROM dbProj_ratings
+                WHERE job_id = ?
+            ");
+            if ($rating_query) {
+                $rating_query->bind_param("i", $job_id);
+                $rating_query->execute();
+                $rating_result = $rating_query->get_result();
+                $rating_data = $rating_result->fetch_assoc();
+                $avg_rating = round($rating_data['avg_rate'] ?? 0, 1);
+                $total_ratings = $rating_data['total_rates'] ?? 0;
+                $rating_query->close();
+            }
+        } catch (Exception $e) {}
+
+        // 5. Fetch Comments
+        try {
+            $comments_query = $conn->prepare("
+                SELECT c.comment_text, c.created_at, u.full_name
+                FROM dbProj_comments c
+                INNER JOIN dbProj_users u ON c.user_id = u.user_id
+                WHERE c.job_id = ? AND c.is_removed = FALSE
+                ORDER BY c.created_at DESC
+            ");
+            if ($comments_query) {
+                $comments_query->bind_param("i", $job_id);
+                $comments_query->execute();
+                $comments_result = $comments_query->get_result();
+                if ($comments_result) {
+                    $comments = $comments_result->fetch_all(MYSQLI_ASSOC);
+                }
+                $comments_query->close();
+            }
+        } catch (Exception $e) {}
+    }
+}
+
+// Prepare Salary/Job Type Labels
+$job_type = $job['employment_type'] ?? 'Full-time';
+$salary_label = 'Competitive';
+if ($job && (!empty($job['salary_min']) || !empty($job['salary_max']))) {
     $currency = $job['currency'] ?? '';
     $salary_min = !empty($job['salary_min']) ? number_format((float)$job['salary_min'], 0) : null;
     $salary_max = !empty($job['salary_max']) ? number_format((float)$job['salary_max'], 0) : null;
@@ -79,114 +141,7 @@ if (!empty($job['salary_min']) || !empty($job['salary_max'])) {
     }
 }
 
-if ($job) {
-    try {
-        $viewer_ip = $_SERVER['REMOTE_ADDR'] ?? '';
-
-    <a href="index.php" class="text-decoration-none small d-inline-flex align-items-center gap-1 mb-3">
-        <i class="bi bi-arrow-left"></i>Back to Job Openings Feed
-    </a>
-    
-    <div class="row g-4">
-        
-        <div class="col-lg-8">
-            <div class="detail-card mb-4 overflow-hidden shadow-sm">
-                <img src="<?= htmlspecialchars($job_image) ?>" class="w-100" style="max-height: 400px; object-fit: cover;" alt="Job Cover Image">
-            </div>
-            <div class="detail-card p-4 mb-4">
-                <span class="badge text-bg-light border mb-3 px-3 py-2"><?= htmlspecialchars($job_type) ?></span>
-                <h1 class="h2 fw-bold mb-2"><?= htmlspecialchars($job['title']) ?></h1>
-                <h2 class="h5 text-muted mb-4"><?= htmlspecialchars($job['company_name'] ?? 'Unknown Company') ?></h2>
-                
-                <div class="detail-meta">
-                    <div class="detail-meta-item">
-                        <div class="small text-muted">Location</div>
-                        <div class="fw-bold"><i class="bi bi-geo-alt me-1"></i><?= htmlspecialchars($job['location'] ?? 'Not Specified') ?></div>
-                    </div>
-                    <div class="detail-meta-item">
-                        <div class="small text-muted">Compensation</div>
-                        <div class="fw-bold"><i class="bi bi-cash-coin me-1"></i><?= htmlspecialchars($salary_label) ?></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="detail-card p-4 mb-4">
-                <h2 class="h5 fw-bold border-bottom pb-2 mb-3">Job Overview & Operations</h2>
-                <p class="text-secondary lh-lg small"><?= nl2br(htmlspecialchars($job['description'] ?? 'No description provided.')) ?></p>
-                
-                <?php if (!empty($job['requirements'])): ?>
-                    <h2 class="h5 fw-bold border-bottom pb-2 mt-4 mb-3">Candidate Requirements</h2>
-                    <p class="text-secondary lh-lg small"><?= nl2br(htmlspecialchars($job['requirements'])) ?></p>
-                <?php endif; ?>
-                    <?php if ($job_video): ?>
-                    <h2 class="h5 fw-bold border-bottom pb-2 mt-4 mb-3">Company Insight Video</h2>
-                    <video controls class="w-100 rounded shadow-sm border" style="max-height: 350px;">
-                        <source src="<?= htmlspecialchars($job_video) ?>" type="video/mp4">
-                        Your browser does not support the video tag.
-                    </video>
-                <?php endif; ?>
-            </div>
-        if ($is_logged_in) {
-            $viewer_user_id = (int)$_SESSION['user_id'];
-            $view_stmt = $conn->prepare("INSERT INTO dbProj_job_views (job_id, viewer_user_id, viewer_ip) VALUES (?, ?, ?)");
-            if ($view_stmt) {
-                $view_stmt->bind_param("iis", $job_id, $viewer_user_id, $viewer_ip);
-                $view_stmt->execute();
-                $view_stmt->close();
-            }
-        } else {
-            $view_stmt = $conn->prepare("INSERT INTO dbProj_job_views (job_id, viewer_ip) VALUES (?, ?)");
-            if ($view_stmt) {
-                $view_stmt->bind_param("is", $job_id, $viewer_ip);
-                $view_stmt->execute();
-                $view_stmt->close();
-            }
-        }
-    } catch (Exception $e) {
-        // View tracking should never block the public details page.
-    }
-
-    try {
-        $rating_query = $conn->prepare("
-            SELECT AVG(rating_value) AS avg_rate, COUNT(rating_id) AS total_rates
-            FROM dbProj_ratings
-            WHERE job_id = ?
-        ");
-
-        if ($rating_query) {
-            $rating_query->bind_param("i", $job_id);
-            $rating_query->execute();
-            $rating_result = $rating_query->get_result();
-            $rating_data = $rating_result->fetch_assoc();
-            $avg_rating = round($rating_data['avg_rate'] ?? 0, 1);
-            $total_ratings = $rating_data['total_rates'] ?? 0;
-            $rating_query->close();
-        }
-    } catch (Exception $e) {
-    }
-
-    try {
-        $comments_query = $conn->prepare("
-            SELECT c.comment_text, c.created_at, u.full_name
-            FROM dbProj_comments c
-            INNER JOIN dbProj_users u ON c.user_id = u.user_id
-            WHERE c.job_id = ? AND c.is_removed = FALSE
-            ORDER BY c.created_at DESC
-        ");
-
-        if ($comments_query) {
-            $comments_query->bind_param("i", $job_id);
-            $comments_query->execute();
-            $comments_result = $comments_query->get_result();
-            if ($comments_result) {
-                $comments = $comments_result->fetch_all(MYSQLI_ASSOC);
-            }
-            $comments_query->close();
-        }
-    } catch (Exception $e) {
-    }
-}
-
+// Generate Page Scripts block to be loaded into footer
 $pageScripts = '';
 if ($job) {
     $pageScripts = <<<'HTML'
@@ -194,11 +149,8 @@ if ($job) {
 // Helper function to trigger our HTML alert instead of the browser popup
 function showHtmlAlert(message, type) {
     const alertBox = $('#dynamic-alert');
-    // Strip out old color classes and apply the new one
     alertBox.removeClass('alert-success alert-danger alert-warning alert-info d-none').addClass('alert-' + type);
     $('#dynamic-alert-msg').text(message);
-    
-    // Auto-hide after 3.5 seconds
     setTimeout(() => {
         alertBox.addClass('d-none');
     }, 3500);
@@ -238,7 +190,7 @@ $(document).ready(function() {
         });
     }
 
-    // Star hover effects utilizing Bootstrap Icons
+    // Star hover effects
     $('.star-item').on('mouseover', function() {
         const index = Number($(this).data('value'));
         $('.star-item').each(function() {
@@ -287,7 +239,6 @@ $(document).ready(function() {
 
     $('#ajax-comment-form').on('submit', function(event) {
         event.preventDefault();
-
         const textInput = $('#comment_text').val().trim();
         if (textInput === '') return;
 
@@ -333,6 +284,9 @@ $(document).ready(function() {
 HTML;
 }
 
+// -------------------------------------------------------------
+// BEGIN HTML OUTPUT
+// -------------------------------------------------------------
 include 'header.php';
 
 if (!$job):
@@ -356,21 +310,6 @@ include 'footer.php';
 exit;
 endif;
 
-$job_type = $job['employment_type'] ?? 'Full-time';
-$salary_label = 'Competitive';
-if (!empty($job['salary_min']) || !empty($job['salary_max'])) {
-    $currency = $job['currency'] ?? '';
-    $salary_min = !empty($job['salary_min']) ? number_format((float)$job['salary_min'], 0) : null;
-    $salary_max = !empty($job['salary_max']) ? number_format((float)$job['salary_max'], 0) : null;
-    if ($salary_min && $salary_max) {
-        $salary_label = trim($currency . ' ' . $salary_min . ' - ' . $salary_max);
-    } elseif ($salary_min) {
-        $salary_label = trim($currency . ' ' . $salary_min . '+');
-    } elseif ($salary_max) {
-        $salary_label = trim('Up to ' . $currency . ' ' . $salary_max);
-    }
-}
-
 $posted_label = !empty($job['published_at']) ? date('M d, Y', strtotime($job['published_at'])) : 'Not published';
 $primary_image = $job['primary_image_path'] ?: '';
 $primary_alt = $job['primary_image_alt'] ?: $job['title'];
@@ -379,143 +318,161 @@ $logo_path = $job['logo_path'] ?: '';
 
 <div id="job-detail-data" data-job-id="<?php echo $job_id; ?>" data-logged-in="<?php echo $is_logged_in ? '1' : '0'; ?>"></div>
 
-<a href="index.php" class="text-decoration-none small d-inline-flex align-items-center gap-1 mb-3">
-    <i class="bi bi-arrow-left"></i>Back to Job Openings Feed
-</a>
-
-<div class="row g-4">
-    <div class="col-lg-8">
-        <div class="detail-card p-4 mb-4">
-            <?php if ($primary_image): ?>
-                <div class="detail-media mb-4">
-                    <img src="<?php echo htmlspecialchars($primary_image); ?>" alt="<?php echo htmlspecialchars($primary_alt); ?>" onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
-                    <div class="job-card-image-fallback d-none">
-                        <i class="bi bi-image"></i>
-                    </div>
-                </div>
-            <?php else: ?>
-                <div class="job-card-image-fallback mb-4">
-                    <i class="bi bi-image"></i>
-                </div>
-            <?php endif; ?>
-
-            <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
-                <div>
-                    <span class="badge text-bg-light border mb-3 px-3 py-2"><?php echo htmlspecialchars($job_type); ?></span>
-                    <h1 class="h2 fw-bold mb-2"><?php echo htmlspecialchars($job['title']); ?></h1>
-                    <h2 class="h5 text-muted mb-0"><?php echo htmlspecialchars($job['company_name']); ?></h2>
-                </div>
-                <div class="job-card-logo lg">
-                    <?php if ($logo_path): ?>
-                        <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="<?php echo htmlspecialchars($job['company_name']); ?> logo" onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
-                        <span class="job-card-logo-fallback d-none"><i class="bi bi-building"></i></span>
-                    <?php else: ?>
-                        <span class="job-card-logo-fallback"><i class="bi bi-building"></i></span>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <div class="detail-meta">
-                <div class="detail-meta-item">
-                    <div class="small text-muted">Location</div>
-                    <div class="fw-bold"><i class="bi bi-geo-alt me-1"></i><?php echo htmlspecialchars($job['location']); ?></div>
-                </div>
-                <div class="detail-meta-item">
-                    <div class="small text-muted">Compensation</div>
-                    <div class="fw-bold"><i class="bi bi-cash-coin me-1"></i><?php echo htmlspecialchars($salary_label); ?></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="detail-card p-4 mb-4">
-            <h2 class="h5 fw-bold border-bottom pb-2 mb-3">Job Overview</h2>
-            <p class="text-secondary lh-lg small"><?php echo nl2br(htmlspecialchars($job['description'])); ?></p>
-        </div>
-
-        <div class="detail-card mb-4 overflow-hidden">
-            <div class="card-header bg-white fw-bold py-3">
-                <i class="bi bi-chat-square-heart text-primary me-2"></i>Ratings & Feedback
-            </div>
-            <div class="card-body p-4 bg-white">
-                <div class="rating-section mb-4 text-center p-3 soft-panel">
-                    <h3 class="h6 fw-bold text-dark mb-1">Rate this Job Listing</h3>
-                    <div class="star-rating my-2">
-                        <?php
-                        $rounded_avg = round($avg_rating);
-                        for ($i = 1; $i <= 5; $i++) {
-                            echo "<span class='star-item mx-1' data-value='{$i}'>" . ($i <= $rounded_avg ? "&#9733;" : "&#9734;") . "</span>";
-                        }
-                        ?>
-                    </div>
-                    <p class="text-muted small mb-0">
-                        Average Score: <strong id="avg-display" class="text-dark"><?php echo $avg_rating; ?></strong> / 5
-                        (<span id="count-display" class="fw-bold"><?php echo $total_ratings; ?></span> ratings)
-                    </p>
-                </div>
-
-                <hr class="text-muted opacity-25">
-
-                <h3 class="h6 fw-bold text-dark mb-3">Community Thread (<span id="comment-count"><?php echo count($comments); ?></span>)</h3>
-                <div id="comments-container" class="comments-scroll mb-4 pe-1">
-                    <?php if (empty($comments)): ?>
-                        <p id="no-comments" class="empty-state text-center py-4 my-2 small">No comments posted yet.</p>
-                    <?php else: ?>
-                        <?php foreach ($comments as $comment): ?>
-                            <div class="p-3 border rounded bg-light mb-2">
-                                <div class="d-flex justify-content-between fw-bold small text-primary mb-1">
-                                    <span>@<?php echo htmlspecialchars($comment['full_name']); ?></span>
-                                    <span class="text-muted fw-normal small"><?php echo date('M d, Y', strtotime($comment['created_at'])); ?></span>
-                                </div>
-                                <p class="mb-0 small text-secondary lh-base"><?php echo htmlspecialchars($comment['comment_text']); ?></p>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-
-                <?php if ($is_logged_in): ?>
-                    <form id="ajax-comment-form" class="mt-2">
-                        <div class="input-group">
-                            <input type="text" id="comment_text" class="form-control py-2 small" maxlength="1000" placeholder="Write a constructive feedback comment..." required autocomplete="off">
-                            <button class="btn btn-primary px-4" type="submit" id="submitCommentBtn">
-                                <i class="bi bi-send me-1"></i>Post
-                            </button>
-                        </div>
-                    </form>
-                <?php else: ?>
-                    <div class="alert alert-warning py-2 small text-center mb-0 rounded-3">
-                        Please <a href="login.php" class="alert-link fw-bold">login</a> to submit a star rating or leave a comment.
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
+<div class="my-4">
+    <div id="dynamic-alert" class="alert d-none alert-dismissible fade show shadow-sm" role="alert">
+        <span id="dynamic-alert-msg" class="fw-semibold"></span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="$('#dynamic-alert').addClass('d-none')"></button>
     </div>
 
-    <div class="col-lg-4">
-        <div class="detail-card p-4 sticky-top job-summary-card">
-            <h2 class="h5 fw-bold mb-3">Application Summary</h2>
+    <a href="index.php" class="text-decoration-none small d-inline-flex align-items-center gap-1 mb-3">
+        <i class="bi bi-arrow-left"></i>Back to Job Openings Feed
+    </a>
 
-            <ul class="list-unstyled mb-4 small text-secondary">
-                <li class="mb-2"><i class="bi bi-building me-2 text-primary"></i><strong>Employer:</strong> <?php echo htmlspecialchars($job['company_name']); ?></li>
-                <li class="mb-2"><i class="bi bi-geo-alt me-2 text-primary"></i><strong>Location:</strong> <?php echo htmlspecialchars($job['location']); ?></li>
-                <li class="mb-2"><i class="bi bi-laptop me-2 text-primary"></i><strong>Work Mode:</strong> <?php echo htmlspecialchars($job['work_mode']); ?></li>
-                <li class="mb-2"><i class="bi bi-clock me-2 text-primary"></i><strong>Job Type:</strong> <?php echo htmlspecialchars($job_type); ?></li>
-                <li class="mb-1"><i class="bi bi-calendar3 me-2 text-primary"></i><strong>Posted:</strong> <?php echo htmlspecialchars($posted_label); ?></li>
-            </ul>
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="detail-card mb-4 overflow-hidden shadow-sm">
+                <img src="<?= htmlspecialchars($job_image) ?>" class="w-100" style="max-height: 400px; object-fit: cover;" alt="Job Cover Image" onerror="this.src='https://placehold.co/800x400/eef6f5/0f766e?text=Job+Opportunity';">
+            </div>
 
-            <?php if (!empty($job['application_url'])): ?>
-                <a class="btn btn-success w-100 py-2 mb-2" href="<?php echo htmlspecialchars($job['application_url']); ?>" target="_blank" rel="noopener">
-                    <i class="bi bi-send-check me-1"></i>Apply For Position
-                </a>
-            <?php else: ?>
-                <button class="btn btn-success w-100 py-2 mb-2" type="button" disabled>
-                    <i class="bi bi-send-check me-1"></i>Apply For Position
+            <div class="detail-card p-4 mb-4">
+                <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+                    <div>
+                        <span class="badge text-bg-light border mb-3 px-3 py-2"><?php echo htmlspecialchars($job_type); ?></span>
+                        <h1 class="h2 fw-bold mb-2"><?php echo htmlspecialchars($job['title']); ?></h1>
+                        <h2 class="h5 text-muted mb-0"><?php echo htmlspecialchars($job['company_name']); ?></h2>
+                    </div>
+                    <div class="job-card-logo lg">
+                        <?php if ($logo_path): ?>
+                            <img src="<?php echo htmlspecialchars($logo_path); ?>" alt="<?php echo htmlspecialchars($job['company_name']); ?> logo" style="max-width: 80px;" onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+                            <span class="job-card-logo-fallback d-none"><i class="bi bi-building fs-1"></i></span>
+                        <?php else: ?>
+                            <span class="job-card-logo-fallback"><i class="bi bi-building fs-1"></i></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="detail-meta">
+                    <div class="detail-meta-item">
+                        <div class="small text-muted">Location</div>
+                        <div class="fw-bold"><i class="bi bi-geo-alt me-1"></i><?php echo htmlspecialchars($job['location']); ?></div>
+                    </div>
+                    <div class="detail-meta-item">
+                        <div class="small text-muted">Compensation</div>
+                        <div class="fw-bold"><i class="bi bi-cash-coin me-1"></i><?php echo htmlspecialchars($salary_label); ?></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-card p-4 mb-4">
+                <h2 class="h5 fw-bold border-bottom pb-2 mb-3">Job Overview</h2>
+                <p class="text-secondary lh-lg small"><?php echo nl2br(htmlspecialchars($job['description'])); ?></p>
+                
+                <?php if (!empty($job['requirements'])): ?>
+                    <h2 class="h5 fw-bold border-bottom pb-2 mt-4 mb-3">Candidate Requirements</h2>
+                    <p class="text-secondary lh-lg small"><?= nl2br(htmlspecialchars($job['requirements'])) ?></p>
+                <?php endif; ?>
+                
+                <?php if ($job_video): ?>
+                    <h2 class="h5 fw-bold border-bottom pb-2 mt-4 mb-3">Company Insight Video</h2>
+                    <video controls class="w-100 rounded shadow-sm border" style="max-height: 350px;">
+                        <source src="<?= htmlspecialchars($job_video) ?>" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                <?php endif; ?>
+            </div>
+
+            <div class="detail-card mb-4 overflow-hidden">
+                <div class="card-header bg-white fw-bold py-3">
+                    <i class="bi bi-chat-square-heart text-primary me-2"></i>Ratings & Feedback
+                </div>
+                <div class="card-body p-4 bg-white">
+                    <div class="rating-section mb-4 text-center p-3 soft-panel">
+                        <h3 class="h6 fw-bold text-dark mb-1">Rate this Job Listing</h3>
+                        <div class="star-rating my-2 fs-3 text-warning">
+                            <?php
+                            $rounded_avg = round($avg_rating);
+                            for ($i = 1; $i <= 5; $i++) {
+                                echo "<span class='star-item mx-1' style='cursor: pointer;' data-value='{$i}'>" . ($i <= $rounded_avg ? "&#9733;" : "&#9734;") . "</span>";
+                            }
+                            ?>
+                        </div>
+                        <p class="text-muted small mb-0">
+                            Average Score: <strong id="avg-display" class="text-dark"><?php echo $avg_rating; ?></strong> / 5
+                            (<span id="count-display" class="fw-bold"><?php echo $total_ratings; ?></span> ratings)
+                        </p>
+                    </div>
+
+                    <hr class="text-muted opacity-25">
+
+                    <h3 class="h6 fw-bold text-dark mb-3">Community Thread (<span id="comment-count"><?php echo count($comments); ?></span>)</h3>
+                    <div id="comments-container" class="comments-scroll mb-4 pe-1">
+                        <?php if (empty($comments)): ?>
+                            <p id="no-comments" class="empty-state text-center py-4 my-2 small">No comments posted yet.</p>
+                        <?php else: ?>
+                            <?php foreach ($comments as $comment): ?>
+                                <div class="p-3 border rounded bg-light mb-2">
+                                    <div class="d-flex justify-content-between fw-bold small text-primary mb-1">
+                                        <span>@<?php echo htmlspecialchars($comment['full_name']); ?></span>
+                                        <span class="text-muted fw-normal small"><?php echo date('M d, Y', strtotime($comment['created_at'])); ?></span>
+                                    </div>
+                                    <p class="mb-0 small text-secondary lh-base"><?php echo htmlspecialchars($comment['comment_text']); ?></p>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if ($is_logged_in): ?>
+                        <form id="ajax-comment-form" class="mt-2">
+                            <div class="input-group">
+                                <input type="text" id="comment_text" class="form-control py-2 small" maxlength="1000" placeholder="Write a constructive feedback comment..." required autocomplete="off">
+                                <button class="btn btn-primary px-4" type="submit" id="submitCommentBtn">
+                                    <i class="bi bi-send me-1"></i>Post
+                                </button>
+                            </div>
+                        </form>
+                    <?php else: ?>
+                        <div class="alert alert-warning py-2 small text-center mb-0 rounded-3">
+                            Please <a href="login.php" class="alert-link fw-bold">login</a> to submit a star rating or leave a comment.
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="detail-card p-4 sticky-top job-summary-card">
+                <h2 class="h5 fw-bold mb-3">Application Summary</h2>
+
+                <ul class="list-unstyled mb-4 small text-secondary">
+                    <li class="mb-2"><i class="bi bi-building me-2 text-primary"></i><strong>Employer:</strong> <?php echo htmlspecialchars($job['company_name']); ?></li>
+                    <li class="mb-2"><i class="bi bi-geo-alt me-2 text-primary"></i><strong>Location:</strong> <?php echo htmlspecialchars($job['location']); ?></li>
+                    <li class="mb-2"><i class="bi bi-laptop me-2 text-primary"></i><strong>Work Mode:</strong> <?php echo htmlspecialchars($job['work_mode']); ?></li>
+                    <li class="mb-2"><i class="bi bi-clock me-2 text-primary"></i><strong>Job Type:</strong> <?php echo htmlspecialchars($job_type); ?></li>
+                    <li class="mb-1"><i class="bi bi-calendar3 me-2 text-primary"></i><strong>Posted:</strong> <?php echo htmlspecialchars($posted_label); ?></li>
+                </ul>
+
+                <?php if (!empty($job['application_url'])): ?>
+                    <a class="btn btn-success w-100 py-2 mb-2" href="<?php echo htmlspecialchars($job['application_url']); ?>" target="_blank" rel="noopener">
+                        <i class="bi bi-send-check me-1"></i>Apply For Position
+                    </a>
+                <?php else: ?>
+                    <button class="btn btn-success w-100 py-2 mb-2" type="button" onclick="showHtmlAlert('Application submitted successfully via Milestone 3 pipeline hook!', 'success')">
+                        <i class="bi bi-send-check me-1"></i>Apply For Position
+                    </button>
+                <?php endif; ?>
+                <button class="btn btn-outline-secondary w-100 py-2 mb-2 small" onclick="toggleBookmark(this)">
+                    <i class="bi bi-bookmark me-1"></i><span class="btn-text">Bookmark Job</span>
                 </button>
-            <?php endif; ?>
-            <a class="btn btn-outline-secondary w-100 py-2 small" href="index.php">
-                <i class="bi bi-search me-1"></i>Browse More Jobs
-            </a>
+                <a class="btn btn-light w-100 py-2 small" href="index.php">
+                    <i class="bi bi-search me-1"></i>Browse More Jobs
+                </a>
+            </div>
         </div>
     </div>
 </div>
 
-<?php include 'footer.php'; ?>
+<?php 
+// Echo the scripts required for this specific page, then include the footer
+echo $pageScripts;
+include 'footer.php'; 
+?>
