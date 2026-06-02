@@ -82,12 +82,20 @@ $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
                             </select>
                         </div>
                         
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-search me-1"></i>Search
-                            </button>
+                        <div class="col-md-2 d-flex align-items-end gap-2">
+                            <?php if (!empty($_GET['search_keyword']) || !empty($_GET['search_employer']) || !empty($_GET['search_category']) || !empty($_GET['search_date_from'])): ?>
+                                <a href="index.php" class="btn btn-outline-secondary w-50" title="Clear Filters">
+                                    <i class="bi bi-x-lg"></i>
+                                </a>
+                                <button type="submit" class="btn btn-primary w-50">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            <?php else: ?>
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-search me-1"></i>Search
+                                </button>
+                            <?php endif; ?>
                         </div>
-
                     </div>
                 </form>
         </div>
@@ -118,13 +126,13 @@ $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
     $params = [];
     $types = ""; // String to hold data types (s = string, i = integer)
 
-    // 2. Keyword Search (FULLTEXT Index)
+// 2. Keyword Search (FULLTEXT Index in Boolean Mode)
     if (!empty($_GET['search_keyword'])) {
-        $conditions[] = "MATCH(title, description) AGAINST(?)";
-        $params[] = $_GET['search_keyword'];
+        $conditions[] = "MATCH(title, description) AGAINST(? IN BOOLEAN MODE)";
+        // Append an asterisk so "dev*" matches "developer", "developing", etc.
+        $params[] = $_GET['search_keyword'] . '*'; 
         $types .= "s";
     }
-
     // 3. Employer Search
     if (!empty($_GET['search_employer'])) {
         $conditions[] = "employer_id = ?";
@@ -225,34 +233,46 @@ $formCategories = $catResult ? $catResult->fetch_all(MYSQLI_ASSOC) : [];
     else: 
     ?>
         <div class="col-12">
-            <div class="empty-state text-center p-5">
-                <i class="bi bi-search display-6 d-block mb-3"></i>
-                <h3 class="h5">No jobs found</h3>
-                <p class="mb-0">Try another keyword, category, or date filter.</p>
+            <div class="soft-panel text-center py-5 px-4 shadow-sm">
+                <div class="stat-icon bg-white text-primary mx-auto mb-3 shadow-sm" style="width: 4rem; height: 4rem; font-size: 2rem;">
+                    <i class="bi bi-search"></i>
+                </div>
+                <h3 class="h4 fw-bold text-dark">No opportunities found</h3>
+                <p class="text-muted mb-4 max-w-md mx-auto">We couldn't find any job listings matching your current filter criteria. Try adjusting your search parameters or check back later.</p>
+                <a href="index.php" class="btn btn-primary px-4">Clear All Filters</a>
             </div>
         </div>
     <?php endif; ?>
-    <?php if ($totalPages > 1): ?>
-        <nav aria-label="Job listings pagination" class="col-12 mt-4">
-            <ul class="pagination justify-content-center">
-                
-                <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
-                    <a class="page-link" href="?page=<?= $page - 1 ?>">Previous</a>
+<?php if ($totalPages > 1): ?>
+    <nav aria-label="Job listings pagination" class="col-12 mt-4">
+        <ul class="pagination justify-content-center">
+            
+            <?php 
+            // Helper function to keep search filters in the URL
+            function buildPageUrl($pageNum) {
+                $params = $_GET;
+                $params['page'] = $pageNum;
+                return '?' . http_build_query($params);
+            }
+            ?>
+
+            <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
+                <a class="page-link" href="<?= buildPageUrl($page - 1) ?>">Previous</a>
+            </li>
+            
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
+                    <a class="page-link" href="<?= buildPageUrl($i) ?>"><?= $i ?></a>
                 </li>
-                
-                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                    <li class="page-item <?= ($page == $i) ? 'active' : '' ?>">
-                        <a class="page-link" href="?page=<?= $i ?>"><?= $i ?></a>
-                    </li>
-                <?php endfor; ?>
-                
-                <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
-                    <a class="page-link" href="?page=<?= $page + 1 ?>">Next</a>
-                </li>
-                
-            </ul>
-        </nav>
-    <?php endif; ?>
+            <?php endfor; ?>
+            
+            <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
+                <a class="page-link" href="<?= buildPageUrl($page + 1) ?>">Next</a>
+            </li>
+            
+        </ul>
+    </nav>
+<?php endif; ?>
 </div>
 
 <?php 
