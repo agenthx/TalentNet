@@ -90,7 +90,7 @@ function jp_nav_active($page, $currentPage) {
             </a>
           </li>
           <li class="nav-item">
-            <a class="btn btn-primary btn-sm ms-lg-2" href="register.php">
+            <a class="nav-link<?php echo jp_nav_active('register.php', $currentPage); ?>" href="register.php">
               <i class="bi bi-person-plus me-1"></i>Register
             </a>
           </li>

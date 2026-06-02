@@ -4,13 +4,13 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once 'db.php'; 
+require_once 'header.php'; // Replaces all the manual <head> and <nav> HTML
 
 $job_id = isset($_GET['id']) ? intval($_GET['id']) : 14; 
 $is_logged_in = isset($_SESSION['user_id']);
 
 $job = null;
 try {
-    // FIX: Added a LEFT JOIN to the dbProj_employers table to pull the actual company_name
     $job_query = $conn->prepare("
         SELECT j.*, e.company_name 
         FROM dbProj_job_listings j
@@ -25,9 +25,7 @@ try {
         $job = $result->fetch_assoc();
         $job_query->close();
     }
-} catch (Exception $e) {
-    // Silently catch errors to allow the placeholder block to load if the DB fails
-}
+} catch (Exception $e) {}
 
 // Placeholder fallback for testing
 if (!$job) {
@@ -96,41 +94,14 @@ if (!empty($job['salary_min']) || !empty($job['salary_max'])) {
 }
 $posted_label = !empty($job['published_at']) ? date('M d, Y', strtotime($job['published_at'])) : 'Just now';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($job['title']) ?> | Job Portal</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="assets/css/app.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-</head>
-<body class="job-detail-page">
 
-<nav class="navbar navbar-expand-lg navbar-light site-navbar sticky-top">
-    <div class="container">
-        <a class="navbar-brand d-flex align-items-center" href="index.php">
-            <span class="brand-mark"><i class="bi bi-briefcase-fill"></i></span>
-            TalentNet
-        </a>
-        <div class="navbar-nav ms-auto">
-            <?php if ($is_logged_in): ?>
-                <span class="nav-link me-3"><i class="bi bi-person-circle me-1"></i>Welcome Back</span>
-                <a class="btn btn-outline-danger btn-sm my-auto" href="logout.php">
-                    <i class="bi bi-box-arrow-right me-1"></i>Logout
-                </a>
-            <?php else: ?>
-                <a class="btn btn-primary btn-sm my-auto" href="login.php">
-                    <i class="bi bi-box-arrow-in-right me-1"></i>Account Login
-                </a>
-            <?php endif; ?>
-        </div>
+<div class="my-4">
+    
+    <div id="dynamic-alert" class="alert d-none alert-dismissible fade show shadow-sm" role="alert">
+        <span id="dynamic-alert-msg" class="fw-semibold"></span>
+        <button type="button" class="btn-close" aria-label="Close" onclick="$('#dynamic-alert').addClass('d-none')"></button>
     </div>
-</nav>
 
-<div class="container my-4">
     <a href="index.php" class="text-decoration-none small d-inline-flex align-items-center gap-1 mb-3">
         <i class="bi bi-arrow-left"></i>Back to Job Openings Feed
     </a>
@@ -138,7 +109,6 @@ $posted_label = !empty($job['published_at']) ? date('M d, Y', strtotime($job['pu
     <div class="row g-4">
         
         <div class="col-lg-8">
-            
             <div class="detail-card p-4 mb-4">
                 <span class="badge text-bg-light border mb-3 px-3 py-2"><?= htmlspecialchars($job_type) ?></span>
                 <h1 class="h2 fw-bold mb-2"><?= htmlspecialchars($job['title']) ?></h1>
@@ -167,22 +137,20 @@ $posted_label = !empty($job['published_at']) ? date('M d, Y', strtotime($job['pu
             </div>
 
             <div class="detail-card mb-4 overflow-hidden">
-                <div class="card-header bg-white fw-bold py-3">
+                <div class="card-header bg-white fw-bold p-3">
                     <i class="bi bi-chat-square-heart text-primary me-2"></i>Ratings & Feedback Hub
                 </div>
                 <div class="card-body p-4 bg-white">
                     
                     <div class="rating-section mb-4 text-center p-3 soft-panel">
                         <h6 class="fw-bold text-dark mb-1">Rate this Job Listing</h6>
-                        <div class="star-rating my-2">
+                        <div class="star-rating my-2 text-warning fs-3" style="cursor: pointer;">
                             <?php 
+                            // Using Bootstrap Icons for perfect alignment instead of HTML entities
                             $rounded_avg = round($avg_rating);
                             for ($i = 1; $i <= 5; $i++) {
-                                if ($i <= $rounded_avg) {
-                                    echo "<span class='star-item mx-1' data-value='{$i}'>&#9733;</span>";
-                                } else {
-                                    echo "<span class='star-item mx-1' data-value='{$i}'>&#9734;</span>";
-                                }
+                                $icon_class = ($i <= $rounded_avg) ? 'bi-star-fill' : 'bi-star';
+                                echo "<i class='star-item bi {$icon_class} mx-1' data-value='{$i}'></i>";
                             }
                             ?>
                         </div>
@@ -233,7 +201,7 @@ $posted_label = !empty($job['published_at']) ? date('M d, Y', strtotime($job['pu
 
         <div class="col-lg-4">
             <div class="detail-card p-4 sticky-top job-summary-card">
-                <h2 class="h5 fw-bold mb-3">Application Summary</h2>
+                <h2 class="h5 fw-bold mt-3 mb-3">Application Summary</h2>
                 
                 <ul class="list-unstyled mb-4 small text-secondary">
                     <li class="mb-2"><i class="bi bi-building me-2 text-primary"></i><strong>Employer:</strong> <?= htmlspecialchars($job['company_name'] ?? 'Unknown Company') ?></li>
@@ -242,11 +210,11 @@ $posted_label = !empty($job['published_at']) ? date('M d, Y', strtotime($job['pu
                     <li class="mb-1"><i class="bi bi-calendar3 me-2 text-primary"></i><strong>Posted:</strong> <?= htmlspecialchars($posted_label) ?></li>
                 </ul>
                 
-                <button class="btn btn-success w-100 py-2 mb-2" onclick="alert('Application submitted successfully via Milestone 3 pipeline hook!')">
+                <button class="btn btn-success w-100 py-2 mb-2" onclick="showHtmlAlert('Application submitted successfully via Milestone 3 pipeline hook!', 'success')">
                     <i class="bi bi-send-check me-1"></i>Apply For Position
                 </button>
-                <button class="btn btn-outline-secondary w-100 py-2 small">
-                    <i class="bi bi-bookmark me-1"></i>Bookmark Job Posting
+                <button class="btn btn-outline-secondary w-100 py-2 small" onclick="toggleBookmark(this)">
+                    <i class="bi bi-bookmark me-1"></i><span class="btn-text">Bookmark Job</span>
                 </button>
             </div>
         </div>
@@ -254,34 +222,67 @@ $posted_label = !empty($job['published_at']) ? date('M d, Y', strtotime($job['pu
     </div>
 </div>
 
-<footer class="site-footer text-center py-4 mt-5">
-    <div class="container">
-        <p class="mb-1 fw-semibold">TalentNet Job Portal</p>
-        <p class="mb-0 small">&copy; 2026 IT8415 Job Portal Group Project. All rights reserved.</p>
-    </div>
-</footer>
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
 <script>
+// Helper function to trigger our HTML alert instead of the browser popup
+function showHtmlAlert(message, type) {
+    const alertBox = $('#dynamic-alert');
+    // Strip out old color classes and apply the new one
+    alertBox.removeClass('alert-success alert-danger alert-warning alert-info d-none').addClass('alert-' + type);
+    $('#dynamic-alert-msg').text(message);
+    
+    // Auto-hide after 3.5 seconds
+    setTimeout(() => {
+        alertBox.addClass('d-none');
+    }, 3500);
+}
+
+// UI Toggle for the Bookmark button
+function toggleBookmark(btn) {
+    let $icon = $(btn).find('i');
+    let $text = $(btn).find('.btn-text');
+    
+    if ($icon.hasClass('bi-bookmark')) {
+        $icon.removeClass('bi-bookmark').addClass('bi-bookmark-fill');
+        $text.text('Job Bookmarked');
+        showHtmlAlert('Job saved to your local session bookmarks!', 'success');
+    } else {
+        $icon.removeClass('bi-bookmark-fill').addClass('bi-bookmark');
+        $text.text('Bookmark Job');
+        showHtmlAlert('Job removed from your bookmarks.', 'info');
+    }
+}
+
 $(document).ready(function() {
     const jobId = $('#job_id').val() || <?= $job_id ?>; 
     const isLoggedIn = <?= $is_logged_in ? 'true' : 'false' ?>;
     
     let currentSavedAvg = Math.round(<?= $avg_rating ?>);
 
+    // Star hover effects utilizing Bootstrap Icons
     $('.star-item').on('mouseover', function() {
         let index = $(this).data('value');
         $('.star-item').each(function() {
-            $(this).html($(this).data('value') <= index ? '&#9733;' : '&#9734;');
+            if ($(this).data('value') <= index) {
+                $(this).removeClass('bi-star').addClass('bi-star-fill');
+            } else {
+                $(this).removeClass('bi-star-fill').addClass('bi-star');
+            }
         });
     }).on('mouseleave', function() {
         $('.star-item').each(function() {
-            $(this).html($(this).data('value') <= currentSavedAvg ? '&#9733;' : '&#9734;');
+            if ($(this).data('value') <= currentSavedAvg) {
+                $(this).removeClass('bi-star').addClass('bi-star-fill');
+            } else {
+                $(this).removeClass('bi-star-fill').addClass('bi-star');
+            }
         });
     });
 
     $('.star-item').on('click', function() {
         if (!isLoggedIn) {
-            alert('Access Denied: Please sign in to rate job listings!');
+            showHtmlAlert('Access Denied: Please sign in to rate job listings!', 'warning');
             return;
         }
         let ratingValue = $(this).data('value');
@@ -302,15 +303,21 @@ $(document).ready(function() {
                     
                     currentSavedAvg = Math.round(response.average);
                     
+                    // Lock in the newly saved stars
                     $('.star-item').each(function() {
-                        $(this).html($(this).data('value') <= currentSavedAvg ? '&#9733;' : '&#9734;');
+                        if ($(this).data('value') <= currentSavedAvg) {
+                            $(this).removeClass('bi-star').addClass('bi-star-fill');
+                        } else {
+                            $(this).removeClass('bi-star-fill').addClass('bi-star');
+                        }
                     });
+                    showHtmlAlert('Thank you! Your rating has been recorded.', 'success');
                 } else {
-                    alert(response.message);
+                    showHtmlAlert(response.message, 'danger');
                 }
             },
             error: function() {
-                alert('Connection error communicating with data hub parameters.');
+                showHtmlAlert('Connection error communicating with data hub parameters.', 'danger');
             }
         });
     });
@@ -350,16 +357,17 @@ $(document).ready(function() {
                     
                     let countSpan = $('#comment-count');
                     countSpan.text(parseInt(countSpan.text()) + 1);
+                    showHtmlAlert('Your comment was posted successfully.', 'success');
                 } else {
-                    alert(response.message);
+                    showHtmlAlert(response.message, 'danger');
                 }
             },
             error: function() {
-                alert('Failed to transmit message parameters asynchronously.');
+                showHtmlAlert('Failed to transmit message parameters asynchronously.', 'danger');
             }
         });
     });
 });
 </script>
-</body>
-</html>
+
+<?php require_once 'footer.php'; ?>

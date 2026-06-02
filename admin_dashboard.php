@@ -98,7 +98,6 @@ try {
         JOIN dbProj_users u ON c.user_id = u.user_id
         JOIN dbProj_job_listings j ON c.job_id = j.job_id
         ORDER BY c.created_at DESC
-        LIMIT 10
     ");
     if (!$commentResult) throw new Exception($conn->error);
     $comments = $commentResult->fetch_all(MYSQLI_ASSOC);
@@ -109,6 +108,96 @@ try {
 
 include 'header.php';
 ?>
+
+<!-- ── Confirmation Modals ─────────────────────────────────────────── -->
+
+<!-- Remove Job Modal -->
+<div class="modal fade" id="modalRemoveJob" tabindex="-1" aria-labelledby="modalRemoveJobLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <div class="rounded-circle bg-danger bg-opacity-10 p-2 me-2">
+                    <i class="bi bi-trash3 text-danger fs-5"></i>
+                </div>
+                <h5 class="modal-title" id="modalRemoveJobLabel">Remove this listing?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-muted">
+                This will hide the job listing from public view. The employer can resubmit it for review if needed.
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" id="formRemoveJob">
+                    <input type="hidden" name="action" value="remove_job">
+                    <input type="hidden" name="job_id" id="removeJobId">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3 me-1"></i>Remove listing
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hide Comment Modal -->
+<div class="modal fade" id="modalHideComment" tabindex="-1" aria-labelledby="modalHideCommentLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <div class="rounded-circle bg-danger bg-opacity-10 p-2 me-2">
+                    <i class="bi bi-eye-slash text-danger fs-5"></i>
+                </div>
+                <h5 class="modal-title" id="modalHideCommentLabel">Hide this comment?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-muted">
+                The comment will be hidden from public view and marked as removed by an administrator.
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" id="formHideComment">
+                    <input type="hidden" name="action" value="delete_comment">
+                    <input type="hidden" name="comment_id" id="hideCommentId">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-eye-slash me-1"></i>Hide comment
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toggle User Status Modal -->
+<div class="modal fade" id="modalToggleUser" tabindex="-1" aria-labelledby="modalToggleUserLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <div class="rounded-circle bg-warning bg-opacity-10 p-2 me-2">
+                    <i class="bi bi-person-dash text-warning fs-5" id="toggleUserIcon"></i>
+                </div>
+                <h5 class="modal-title" id="modalToggleUserLabel">Deactivate this account?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-muted" id="toggleUserBody">
+                The user will lose access to their account. You can reactivate them at any time from this dashboard.
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" id="formToggleUser">
+                    <input type="hidden" name="action" value="toggle_user_status">
+                    <input type="hidden" name="user_id" id="toggleUserId">
+                    <input type="hidden" name="status" id="toggleUserStatus">
+                    <button type="submit" class="btn btn-warning" id="toggleUserBtn">
+                        <i class="bi bi-pause-circle me-1" id="toggleUserBtnIcon"></i>
+                        <span id="toggleUserBtnLabel">Deactivate</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Page Content ────────────────────────────────────────────────── -->
 
 <section class="section-hero mb-4">
     <div class="d-flex justify-content-between flex-wrap align-items-center gap-3">
@@ -207,14 +296,16 @@ include 'header.php';
                         </td>
                         <td><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
                         <td>
-                            <form method="POST" style="display:inline;">
-                                <input type="hidden" name="action" value="toggle_user_status">
-                                <input type="hidden" name="user_id" value="<?php echo $user['user_id']; ?>">
-                                <input type="hidden" name="status" value="<?php echo $user['is_active'] ? 0 : 1; ?>">
-                                <button type="submit" class="btn btn-sm <?php echo $user['is_active'] ? 'btn-warning' : 'btn-success'; ?>">
-                                    <i class="bi <?php echo $user['is_active'] ? 'bi-pause-circle' : 'bi-check-circle'; ?> me-1"></i><?php echo $user['is_active'] ? 'Deactivate' : 'Activate'; ?>
-                                </button>
-                            </form>
+                            <button type="button"
+                                class="btn btn-sm <?php echo $user['is_active'] ? 'btn-warning' : 'btn-success'; ?>"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalToggleUser"
+                                data-user-id="<?php echo $user['user_id']; ?>"
+                                data-new-status="<?php echo $user['is_active'] ? 0 : 1; ?>"
+                                data-is-active="<?php echo (int)$user['is_active']; ?>"
+                                data-user-name="<?php echo htmlspecialchars($user['full_name']); ?>">
+                                <i class="bi <?php echo $user['is_active'] ? 'bi-pause-circle' : 'bi-check-circle'; ?> me-1"></i><?php echo $user['is_active'] ? 'Deactivate' : 'Activate'; ?>
+                            </button>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -247,13 +338,13 @@ include 'header.php';
                         </td>
                         <td><?php echo date('M d, Y', strtotime($job['created_at'])); ?></td>
                         <td>
-                            <form method="POST" onsubmit="return confirm('Are you sure you want to remove this listing?');">
-                                <input type="hidden" name="action" value="remove_job">
-                                <input type="hidden" name="job_id" value="<?php echo $job['job_id']; ?>">
-                                <button type="submit" class="btn btn-sm btn-danger">
-                                    <i class="bi bi-trash3 me-1"></i>Remove
-                                </button>
-                            </form>
+                            <button type="button"
+                                class="btn btn-sm btn-danger"
+                                data-bs-toggle="modal"
+                                data-bs-target="#modalRemoveJob"
+                                data-job-id="<?php echo $job['job_id']; ?>">
+                                <i class="bi bi-trash3 me-1"></i>Remove
+                            </button>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -289,13 +380,13 @@ include 'header.php';
                         </td>
                         <td>
                             <?php if (!$comment['is_removed']): ?>
-                                <form method="POST" onsubmit="return confirm('Delete this comment?');">
-                                    <input type="hidden" name="action" value="delete_comment">
-                                    <input type="hidden" name="comment_id" value="<?php echo $comment['comment_id']; ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-eye-slash me-1"></i>Hide
-                                    </button>
-                                </form>
+                                <button type="button"
+                                    class="btn btn-sm btn-outline-danger"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalHideComment"
+                                    data-comment-id="<?php echo $comment['comment_id']; ?>">
+                                    <i class="bi bi-eye-slash me-1"></i>Hide
+                                </button>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -305,5 +396,50 @@ include 'header.php';
         </div>
     </div>
 </div>
+
+<script>
+// Populate Remove Job modal
+document.getElementById('modalRemoveJob').addEventListener('show.bs.modal', function (e) {
+    document.getElementById('removeJobId').value = e.relatedTarget.dataset.jobId;
+});
+
+// Populate Hide Comment modal
+document.getElementById('modalHideComment').addEventListener('show.bs.modal', function (e) {
+    document.getElementById('hideCommentId').value = e.relatedTarget.dataset.commentId;
+});
+
+// Populate Toggle User modal — adjusts copy for activate vs deactivate
+document.getElementById('modalToggleUser').addEventListener('show.bs.modal', function (e) {
+    const btn      = e.relatedTarget;
+    const isActive = btn.dataset.isActive === '1';
+    const name     = btn.dataset.userName;
+
+    document.getElementById('toggleUserId').value     = btn.dataset.userId;
+    document.getElementById('toggleUserStatus').value = btn.dataset.newStatus;
+
+    const title    = document.getElementById('modalToggleUserLabel');
+    const body     = document.getElementById('toggleUserBody');
+    const icon     = document.getElementById('toggleUserIcon');
+    const btnEl    = document.getElementById('toggleUserBtn');
+    const btnIcon  = document.getElementById('toggleUserBtnIcon');
+    const btnLabel = document.getElementById('toggleUserBtnLabel');
+
+    if (isActive) {
+        title.textContent    = 'Deactivate ' + name + '?';
+        body.textContent     = 'This user will lose access to their account immediately. You can reactivate them at any time from this dashboard.';
+        icon.className       = 'bi bi-person-dash text-warning fs-5';
+        btnEl.className      = 'btn btn-warning';
+        btnIcon.className    = 'bi bi-pause-circle me-1';
+        btnLabel.textContent = 'Deactivate';
+    } else {
+        title.textContent    = 'Activate ' + name + '?';
+        body.textContent     = 'This will restore access to their account and allow them to log in again.';
+        icon.className       = 'bi bi-person-check text-success fs-5';
+        btnEl.className      = 'btn btn-success';
+        btnIcon.className    = 'bi bi-check-circle me-1';
+        btnLabel.textContent = 'Activate';
+    }
+});
+</script>
 
 <?php include 'footer.php'; ?>
